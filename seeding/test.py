@@ -7,7 +7,9 @@ from PyQt5.QtGui import QImage, QPixmap
 app = QApplication(sys.argv)
 
 # Попробуй загрузить самую простую картинку
-image = cv2.imread('C:\\Users\\alesh\\Desktop\\SCAN0006\\SCAN0006_page-0001.jpg')  # Подставь путь к своему PNG/JPG
+image = cv2.imread(
+    "C:\\Users\\alesh\\Desktop\\SCAN0006\\SCAN0006_page-0001.jpg"
+)  # Подставь путь к своему PNG/JPG
 if image is None:
     print("Не удалось загрузить изображение!")
     sys.exit(1)

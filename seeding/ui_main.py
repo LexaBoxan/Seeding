@@ -1,11 +1,20 @@
 from PyQt5.QtWidgets import (
-    QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QToolBar, QAction,
-    QFileDialog, QMenuBar, QGroupBox, QScrollArea
+    QMainWindow,
+    QWidget,
+    QVBoxLayout,
+    QHBoxLayout,
+    QLabel,
+    QToolBar,
+    QAction,
+    QFileDialog,
+    QMenuBar,
+    QGroupBox,
+    QScrollArea,
 )
 from PyQt5.QtGui import QIcon, QPixmap, QImage
 from PyQt5.QtCore import Qt, QPoint
-from models.dataclassesMe import OriginalImage, ObjectImage
-from tree_widget_example import TreeWidgetExample
+from .models.data_models import OriginalImage, ObjectImage
+from .tree_widget_example import TreeWidgetExample
 import numpy as np
 import cv2
 import fitz
@@ -13,6 +22,10 @@ from ultralytics import YOLO
 
 
 class DraggableScrollArea(QScrollArea):
+    """
+    ScrollArea c возможностью перетаскивания средней кнопкой мыши.
+    """
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self._drag_active = False
@@ -24,8 +37,9 @@ class DraggableScrollArea(QScrollArea):
             self._drag_active = True
             self.setCursor(Qt.ClosedHandCursor)
             self._drag_start_pos = event.pos()
-            self._scroll_start_pos = QPoint(self.horizontalScrollBar().value(),
-                                            self.verticalScrollBar().value())
+            self._scroll_start_pos = QPoint(
+                self.horizontalScrollBar().value(), self.verticalScrollBar().value()
+            )
         else:
             super().mousePressEvent(event)
 
@@ -91,17 +105,25 @@ def simple_nms(boxes, scores, iou_threshold=0.4):
 
 
 class ImageEditor(QMainWindow):
+    """
+    Главное окно приложения для работы с изображениями и PDF.
+
+    Позволяет загружать файлы, управлять слоями и искать сеянцы при помощи YOLOv8.
+    """
+
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Современный UI для работы с изображениями")
         self.setGeometry(100, 100, 1200, 800)
         self.zoom_factor = 1.0
         self.image_storage = OriginalImage()
-        self.model = YOLO("E:/_JOB_/_Python/pythonProject/results/exp_yolov8_custom_best11/weights/best.pt")
+        self.model = YOLO(
+            "E:/_JOB_/_Python/pythonProject/results/exp_yolov8_custom_best11/weights/best.pt"
+        )
 
-        self.initUI()
+        self.init_ui()
 
-    def initUI(self):
+    def init_ui(self):
         self.create_menu()
         self.create_toolbars()
         self.create_central_widget()
@@ -195,14 +217,16 @@ class ImageEditor(QMainWindow):
     def on_tree_item_clicked(self, item, column):
         item_data = item.data(0, Qt.UserRole)
         if item_data:
-            if item_data['type'] in ('original', 'pdf'):
-                idx = item_data['index']
+            if item_data["type"] in ("original", "pdf"):
+                idx = item_data["index"]
                 self._active_image_index = idx
                 self.display_image_with_boxes(idx)
-            elif item_data['type'] == 'seeding':
-                parent_idx = item_data['parent_index']
-                seed_idx = item_data['index']
-                crop = self.image_storage.class_object_image[parent_idx][seed_idx].image[0]
+            elif item_data["type"] == "seeding":
+                parent_idx = item_data["parent_index"]
+                seed_idx = item_data["index"]
+                crop = self.image_storage.class_object_image[parent_idx][
+                    seed_idx
+                ].image[0]
                 self._active_image_index = parent_idx
                 self.display_image(crop)
             else:
@@ -214,14 +238,14 @@ class ImageEditor(QMainWindow):
             self,
             "Открыть изображение или PDF",
             "",
-            "Images (*.png *.jpg *.jpeg *.bmp);;PDF Files (*.pdf);;All Files (*)"
+            "Images (*.png *.jpg *.jpeg *.bmp);;PDF Files (*.pdf);;All Files (*)",
         )
         if file_name:
             self.image_storage.file_path = file_name
             self.image_storage.images.clear()
             self.tree_widget.clear()
 
-            if file_name.lower().endswith('.pdf'):
+            if file_name.lower().endswith(".pdf"):
                 self.load_pdf(file_name)
             else:
                 image = self.load_image(file_name)
@@ -229,7 +253,9 @@ class ImageEditor(QMainWindow):
                     self.image_storage.images.append(image)
 
             # Обязательно инициализируем пустые списки для найденных объектов
-            self.image_storage.class_object_image = [[] for _ in range(len(self.image_storage.images))]
+            self.image_storage.class_object_image = [
+                [] for _ in range(len(self.image_storage.images))
+            ]
 
     def load_image(self, file_name):
         try:
@@ -246,7 +272,9 @@ class ImageEditor(QMainWindow):
                 page = doc.load_page(page_num)
                 mat = fitz.Matrix(4, 4)  # 2x масштаб
                 pix = page.get_pixmap(matrix=mat)
-                img = np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.height, pix.width, pix.n)
+                img = np.frombuffer(pix.samples, dtype=np.uint8).reshape(
+                    pix.height, pix.width, pix.n
+                )
                 if pix.n == 4:
                     img = img[:, :, :3].copy()
                 img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
@@ -255,11 +283,15 @@ class ImageEditor(QMainWindow):
                 if page_num == 0:
                     self.display_image(img)
                 # Добавить в дерево
-                self.tree_widget.add_root_item(f"Стр. {page_num + 1}", "Страница PDF", page_num, 'pdf', img)
+                self.tree_widget.add_root_item(
+                    f"Стр. {page_num + 1}", "Страница PDF", page_num, "pdf", img
+                )
             doc.close()
 
             # Инициализация class_object_image для всех страниц
-            self.image_storage.class_object_image = [[] for _ in range(len(self.image_storage.images))]
+            self.image_storage.class_object_image = [
+                [] for _ in range(len(self.image_storage.images))
+            ]
 
         except Exception as e:
             print("Ошибка при загрузке PDF:", e)
@@ -309,15 +341,12 @@ class ImageEditor(QMainWindow):
         self.update_image_zoom()
 
     def update_image_zoom(self):
-        if hasattr(self, '_original_pixmap'):
+        if hasattr(self, "_original_pixmap"):
             pixmap = self._original_pixmap
             new_width = max(1, int(pixmap.width() * self.zoom_factor))
             new_height = max(1, int(pixmap.height() * self.zoom_factor))
             scaled_pixmap = pixmap.scaled(
-                new_width,
-                new_height,
-                Qt.KeepAspectRatio,
-                Qt.SmoothTransformation
+                new_width, new_height, Qt.KeepAspectRatio, Qt.SmoothTransformation
             )
             self.image_label.setPixmap(scaled_pixmap)
             self.image_label.adjustSize()
@@ -333,8 +362,8 @@ class ImageEditor(QMainWindow):
             print("rotate_image: Нет данных для выбранного элемента")
             return
 
-        if item_data['type'] in ('original', 'pdf'):
-            idx = item_data['index']
+        if item_data["type"] in ("original", "pdf"):
+            idx = item_data["index"]
             image = self.image_storage.images[idx]
             if image is None:
                 print("rotate_image: Оригинал отсутствует")
@@ -344,16 +373,18 @@ class ImageEditor(QMainWindow):
             print(f"rotate_image: Изображение {idx} повернуто")
             self.display_image(rotated)
 
-        elif item_data['type'] == 'seeding':
-            parent_idx = item_data['parent_index']
-            seed_idx = item_data['index']
+        elif item_data["type"] == "seeding":
+            parent_idx = item_data["parent_index"]
+            seed_idx = item_data["index"]
             obj = self.image_storage.class_object_image[parent_idx][seed_idx]
             if not obj.image or obj.image[0] is None:
                 print("rotate_image: Crop пустой")
                 return
             crop = obj.image[0]
             rotated = np.rot90(crop, k=-1)
-            self.image_storage.class_object_image[parent_idx][seed_idx].image[0] = rotated
+            self.image_storage.class_object_image[parent_idx][seed_idx].image[
+                0
+            ] = rotated
             print(f"rotate_image: Crop {seed_idx} (от оригинала {parent_idx}) повернут")
             self.display_image(rotated)
         else:
@@ -365,10 +396,12 @@ class ImageEditor(QMainWindow):
 
     def find_seedlings(self):
         if self.image_storage.class_object_image is None:
-            self.image_storage.class_object_image = [[] for _ in range(len(self.image_storage.images))]
+            self.image_storage.class_object_image = [
+                [] for _ in range(len(self.image_storage.images))
+            ]
 
         print("find_seedlings: start")
-        current_index = getattr(self, '_active_image_index', 0)
+        current_index = getattr(self, "_active_image_index", 0)
         print(f"find_seedlings: current_index = {current_index}")
 
         if not self.image_storage.images:
@@ -408,16 +441,20 @@ class ImageEditor(QMainWindow):
                     x1, x2 = max(0, x1), min(x2, w)
                     y1, y2 = max(0, y1), min(y2, h)
                     if x2 <= x1 or y2 <= y1:
-                        print(f"find_seedlings: пропускаем некорректный bbox {x1, y1, x2, y2}")
+                        print(
+                            f"find_seedlings: пропускаем некорректный bbox {x1, y1, x2, y2}"
+                        )
                         continue
 
                     boxes.append([x1, y1, x2, y2])
                     scores.append(score)
-                    class_boxes_data.append({
-                        'class_name': class_name,
-                        'score': score,
-                        'coords': (x1, y1, x2, y2)
-                    })
+                    class_boxes_data.append(
+                        {
+                            "class_name": class_name,
+                            "score": score,
+                            "coords": (x1, y1, x2, y2),
+                        }
+                    )
 
             print(f"find_seedlings: найдено {len(boxes)} боксов, запускаем NMS")
             indices = simple_nms(boxes, scores, iou_threshold=0.4)
@@ -428,13 +465,13 @@ class ImageEditor(QMainWindow):
             parent_item = self.tree_widget.topLevelItem(current_index)
             for i_out, i in enumerate(indices):
                 data = class_boxes_data[i]
-                x1, y1, x2, y2 = data['coords']
+                x1, y1, x2, y2 = data["coords"]
                 crop = image[y1:y2, x1:x2].copy()
                 obj = ObjectImage(
-                    class_name=data['class_name'],
-                    confidence=data['score'],
+                    class_name=data["class_name"],
+                    confidence=data["score"],
                     image=[crop],
-                    bbox=(x1, y1, x2, y2)
+                    bbox=(x1, y1, x2, y2),
                 )
                 self.image_storage.class_object_image[current_index].append(obj)
                 self.tree_widget.add_child_item(
@@ -443,8 +480,8 @@ class ImageEditor(QMainWindow):
                     f"Уверенность: {data['score']:.2f}",
                     current_index,
                     i_out,
-                    'seeding',
-                    crop
+                    "seeding",
+                    crop,
                 )
 
             print("find_seedlings: завершено")
@@ -462,17 +499,26 @@ class ImageEditor(QMainWindow):
             return
 
         for idx, image in enumerate(self.image_storage.images):
-            self._active_image_index = idx  # чтобы всё работало так же, как для find_seedlings
+            self._active_image_index = (
+                idx  # чтобы всё работало так же, как для find_seedlings
+            )
             self.find_seedlings()
         print("find_all_seedlings: завершено")
 
     def display_image_with_boxes(self, idx):
         image = self.image_storage.images[idx].copy()
-        if self.image_storage.class_object_image and len(self.image_storage.class_object_image) > idx:
-            for i, obj in enumerate(self.image_storage.class_object_image[idx], start=1):
+        if (
+            self.image_storage.class_object_image
+            and len(self.image_storage.class_object_image) > idx
+        ):
+            for i, obj in enumerate(
+                self.image_storage.class_object_image[idx], start=1
+            ):
                 if obj.bbox:
                     x1, y1, x2, y2 = obj.bbox
-                    cv2.rectangle(image, (x1, y1), (x2, y2), color=(0, 255, 0), thickness=2)
+                    cv2.rectangle(
+                        image, (x1, y1), (x2, y2), color=(0, 255, 0), thickness=2
+                    )
                     cv2.putText(
                         image,
                         f"{i}",  # Нумерация
@@ -480,7 +526,7 @@ class ImageEditor(QMainWindow):
                         cv2.FONT_HERSHEY_SIMPLEX,
                         0.8,
                         (0, 255, 0),
-                        2
+                        2,
                     )
         self.display_image(image)
 
