@@ -29,12 +29,14 @@ class DraggableScrollArea(QScrollArea):
     """
 
     def __init__(self, parent=None):
+        """Конструктор виджета с поддержкой перетаскивания."""
         super().__init__(parent)
         self._drag_active = False
         self._drag_start_pos = QPoint()
         self._scroll_start_pos = QPoint()
 
     def mousePressEvent(self, event):
+        """Начинает перетаскивание при нажатии средней кнопкой мыши."""
         if event.button() == Qt.MiddleButton:
             self._drag_active = True
             self.setCursor(Qt.ClosedHandCursor)
@@ -46,6 +48,7 @@ class DraggableScrollArea(QScrollArea):
             super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event):
+        """Перемещает содержимое при активном перетаскивании."""
         if self._drag_active:
             delta = event.pos() - self._drag_start_pos
             self.horizontalScrollBar().setValue(self._scroll_start_pos.x() - delta.x())
@@ -54,6 +57,7 @@ class DraggableScrollArea(QScrollArea):
             super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event):
+        """Завершает перетаскивание."""
         if event.button() == Qt.MiddleButton:
             self._drag_active = False
             self.setCursor(Qt.ArrowCursor)
@@ -69,6 +73,7 @@ class ImageEditor(QMainWindow):
     """
 
     def __init__(self):
+        """Инициализация главного окна и загрузка модели."""
         super().__init__()
         self.setWindowTitle("Современный UI для работы с изображениями")
         self.setGeometry(100, 100, 1200, 800)
@@ -81,12 +86,14 @@ class ImageEditor(QMainWindow):
         self.init_ui()
 
     def init_ui(self):
+        """Создаёт все основные виджеты интерфейса."""
         self.create_menu()
         self.create_toolbars()
         self.create_central_widget()
         self.create_right_panel()
 
     def create_menu(self):
+        """Создаёт меню приложения с пунктом открытия файла."""
         menu_bar = self.menuBar()
         file_menu = menu_bar.addMenu("Файл")
         open_action = QAction("Открыть файл", self)
@@ -94,6 +101,7 @@ class ImageEditor(QMainWindow):
         file_menu.addAction(open_action)
 
     def create_toolbars(self):
+        """Создаёт боковую панель инструментов."""
         toolbar = QToolBar("Toolbar", self)
         toolbar.setOrientation(Qt.Vertical)
         toolbar.setMovable(False)
@@ -141,6 +149,7 @@ class ImageEditor(QMainWindow):
         toolbar.addAction(self.fit_action)
 
     def create_central_widget(self):
+        """Создаёт центральную область отображения изображений."""
         self.scroll_area = DraggableScrollArea()
         self.scroll_area.setWidgetResizable(True)
 
@@ -156,6 +165,7 @@ class ImageEditor(QMainWindow):
         self.main_layout.addWidget(self.scroll_area, 2)
 
     def create_right_panel(self):
+        """Создаёт правую панель с деревом слоёв."""
         self.right_panel = QGroupBox("Слои")
         layout = QVBoxLayout()
         self.tree_widget = LayerTreeWidget()
@@ -172,6 +182,7 @@ class ImageEditor(QMainWindow):
         self.main_layout.addWidget(self.right_panel, 1)
 
     def on_tree_item_clicked(self, item, column):
+        """Обрабатывает выбор элемента в дереве слоёв."""
         item_data = item.data(0, Qt.UserRole)
         if item_data:
             if item_data["type"] in ("original", "pdf"):
@@ -190,6 +201,7 @@ class ImageEditor(QMainWindow):
                 return
 
     def open_image(self):
+        """Открывает диалог выбора файла и загружает изображение или PDF."""
         self.image_storage = OriginalImage()
         file_name, _ = QFileDialog.getOpenFileName(
             self,
@@ -215,6 +227,7 @@ class ImageEditor(QMainWindow):
             ]
 
     def load_image(self, file_name):
+        """Загружает изображение с диска."""
         try:
             image = cv2.imread(file_name)
             return image
@@ -223,6 +236,7 @@ class ImageEditor(QMainWindow):
             return None
 
     def load_pdf(self, pdf_path):
+        """Загружает все страницы PDF как изображения."""
         try:
             doc = fitz.open(pdf_path)
             for page_num in range(doc.page_count):
@@ -254,6 +268,7 @@ class ImageEditor(QMainWindow):
             print("Ошибка при загрузке PDF:", e)
 
     def display_image(self, image):
+        """Отображает переданное изображение в центральной области."""
         if image is None or not isinstance(image, np.ndarray):
             return
         height, width = image.shape[:2]
@@ -284,20 +299,24 @@ class ImageEditor(QMainWindow):
         self.update_image_zoom()
 
     def zoom_in(self):
+        """Увеличивает изображение."""
         self.zoom_factor *= 1.25
         self.update_image_zoom()
 
     def zoom_out(self):
+        """Уменьшает изображение."""
         self.zoom_factor /= 1.25
         if self.zoom_factor < self.min_fit_zoom:
             self.zoom_factor = self.min_fit_zoom
         self.update_image_zoom()
 
     def fit_to_window(self):
+        """Масштабирует изображение так, чтобы оно поместилось в окно."""
         self.zoom_factor = self.min_fit_zoom
         self.update_image_zoom()
 
     def update_image_zoom(self):
+        """Применяет текущий масштаб к изображению."""
         if hasattr(self, "_original_pixmap"):
             pixmap = self._original_pixmap
             new_width = max(1, int(pixmap.width() * self.zoom_factor))
@@ -309,6 +328,7 @@ class ImageEditor(QMainWindow):
             self.image_label.adjustSize()
 
     def rotate_image(self):
+        """Поворачивает выбранное изображение или crop на 90 градусов."""
         selected_item = self.tree_widget.currentItem()
         if selected_item is None:
             print("rotate_image: Нет выбранного элемента в дереве")
@@ -349,9 +369,17 @@ class ImageEditor(QMainWindow):
             return
 
     def create_mask(self):
+        """Создание маски (функциональность пока не реализована)."""
         print("Создание маски — пока не реализовано")
 
     def find_seedlings(self):
+        """Запускает модель YOLOv8 для поиска сеянцев на текущем изображении.
+
+        Результаты проходят через простую процедуру NMS. Каждая найденная
+        область добавляется в хранилище `image_storage` и отображается в дереве
+        слоёв. Если ширина вырезанного участка больше его высоты, изображение
+        поворачивается на 90 градусов для вертикальной ориентации.
+        """
         if self.image_storage.class_object_image is None:
             self.image_storage.class_object_image = [
                 [] for _ in range(len(self.image_storage.images))
@@ -424,6 +452,10 @@ class ImageEditor(QMainWindow):
                 data = class_boxes_data[i]
                 x1, y1, x2, y2 = data["coords"]
                 crop = image[y1:y2, x1:x2].copy()
+                # Проверяем ориентацию crop'a. Если ширина больше высоты,
+                # поворачиваем изображение на 90 градусов, чтобы оно стало вертикальным
+                if crop.shape[1] > crop.shape[0]:
+                    crop = np.rot90(crop)
                 obj = ObjectImage(
                     class_name=data["class_name"],
                     confidence=data["score"],
@@ -448,9 +480,7 @@ class ImageEditor(QMainWindow):
             return
 
     def find_all_seedlings(self):
-        """
-        Находит сеянцы на всех изображениях (или страницах PDF).
-        """
+        """Последовательно запускает поиск сеянцев на всех изображениях."""
         if not self.image_storage.images:
             print("find_all_seedlings: Нет изображений")
             return
@@ -463,6 +493,7 @@ class ImageEditor(QMainWindow):
         print("find_all_seedlings: завершено")
 
     def display_image_with_boxes(self, idx):
+        """Отображает изображение с нанесёнными рамками объектов."""
         image = self.image_storage.images[idx].copy()
         if (
             self.image_storage.class_object_image
@@ -488,7 +519,9 @@ class ImageEditor(QMainWindow):
         self.display_image(image)
 
     def classify(self):
+        """Классифицирует найденные объекты (заглушка)."""
         print("Классификация — пока не реализовано")
 
     def create_report(self):
+        """Создание итогового отчёта (заглушка)."""
         print("Создание отчёта — пока не реализовано")

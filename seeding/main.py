@@ -5,6 +5,7 @@ import qt_material  # Импортируйте qt_material после PyQt5
 
 
 def main():
+    """Точка входа в приложение."""
     app = QApplication(sys.argv)
     qt_material.apply_stylesheet(app, theme="dark_blue.xml")
     window = ImageEditor()

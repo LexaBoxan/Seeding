@@ -8,6 +8,7 @@ class LayerTreeWidget(QTreeWidget):
     """Простой QTreeWidget для отображения иерархии изображений."""
 
     def __init__(self) -> None:
+        """Конструктор дерева слоёв."""
         super().__init__()
         self.setHeaderLabels(["Название", "Описание"])
 

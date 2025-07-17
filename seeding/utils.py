@@ -4,7 +4,16 @@ import numpy as np
 
 
 def simple_nms(boxes, scores, iou_threshold=0.4):
-    """Perform a basic NMS (non-maximum suppression) on bounding boxes."""
+    """Простейшая реализация non-maximum suppression.
+
+    Args:
+        boxes (List[list[int]]): Список прямоугольников [x1, y1, x2, y2].
+        scores (List[float]): Уверенности детекции для каждого прямоугольника.
+        iou_threshold (float): Порог IoU для подавления перекрывающихся боксов.
+
+    Returns:
+        List[int]: Индексы боксов, которые следует оставить.
+    """
     if not boxes:
         print("simple_nms: пустой список боксов")
         return []
