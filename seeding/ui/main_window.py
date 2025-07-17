@@ -1,3 +1,5 @@
+"""Основное окно приложения."""
+
 from PyQt5.QtWidgets import (
     QMainWindow,
     QWidget,
@@ -7,14 +9,14 @@ from PyQt5.QtWidgets import (
     QToolBar,
     QAction,
     QFileDialog,
-    QMenuBar,
     QGroupBox,
     QScrollArea,
 )
 from PyQt5.QtGui import QIcon, QPixmap, QImage
 from PyQt5.QtCore import Qt, QPoint
-from .models.data_models import OriginalImage, ObjectImage
-from .tree_widget_example import TreeWidgetExample
+from ..models.data_models import OriginalImage, ObjectImage
+from .tree_widget import LayerTreeWidget
+from ..utils import simple_nms
 import numpy as np
 import cv2
 import fitz
@@ -57,51 +59,6 @@ class DraggableScrollArea(QScrollArea):
             self.setCursor(Qt.ArrowCursor)
         else:
             super().mouseReleaseEvent(event)
-
-
-def simple_nms(boxes, scores, iou_threshold=0.4):
-    """
-    Простая реализация NMS (non-maximum suppression) на numpy.
-    boxes - список bbox: [x1, y1, x2, y2]
-    scores - список confidence
-    Возвращает индексы выбранных боксов.
-    """
-    if len(boxes) == 0:
-        print("simple_nms: пустой список боксов")
-        return []
-
-    boxes = np.array(boxes)
-    scores = np.array(scores)
-
-    x1 = boxes[:, 0]
-    y1 = boxes[:, 1]
-    x2 = boxes[:, 2]
-    y2 = boxes[:, 3]
-
-    areas = (x2 - x1) * (y2 - y1)
-    order = scores.argsort()[::-1]
-
-    keep = []
-    while order.size > 0:
-        i = order[0]
-        keep.append(i)
-
-        xx1 = np.maximum(x1[i], x1[order[1:]])
-        yy1 = np.maximum(y1[i], y1[order[1:]])
-        xx2 = np.minimum(x2[i], x2[order[1:]])
-        yy2 = np.minimum(y2[i], y2[order[1:]])
-
-        w = np.maximum(0, xx2 - xx1)
-        h = np.maximum(0, yy2 - yy1)
-        inter = w * h
-
-        iou = inter / (areas[i] + areas[order[1:]] - inter)
-
-        inds = np.where(iou <= iou_threshold)[0]
-        order = order[inds + 1]
-
-    print(f"simple_nms: после NMS осталось {len(keep)} боксов")
-    return keep
 
 
 class ImageEditor(QMainWindow):
@@ -201,7 +158,7 @@ class ImageEditor(QMainWindow):
     def create_right_panel(self):
         self.right_panel = QGroupBox("Слои")
         layout = QVBoxLayout()
-        self.tree_widget = TreeWidgetExample()
+        self.tree_widget = LayerTreeWidget()
         layout.addWidget(self.tree_widget)
 
         scroll_area = QScrollArea()

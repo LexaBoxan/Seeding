@@ -1,7 +1,4 @@
-# image_processor.py
-"""
-Заглушка для модуля обработки изображений.
-"""
+"""Заглушка модуля обработки изображений."""
 
 
 class ImageProcessor:
@@ -12,3 +9,4 @@ class ImageProcessor:
         # Тут будет твоя логика обработки изображения
         print("Вызван ImageProcessor.kmeans_segmentation (заглушка)")
         return None, None
+

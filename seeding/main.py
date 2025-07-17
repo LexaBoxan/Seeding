@@ -1,6 +1,6 @@
 import sys
 from PyQt5.QtWidgets import QApplication
-from .ui_main import ImageEditor
+from .ui.main_window import ImageEditor
 import qt_material  # Импортируйте qt_material после PyQt5
 
 
