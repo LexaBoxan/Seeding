@@ -23,7 +23,7 @@ from reportlab.platypus import (
     TableStyle,
 )
 
-from .models.data_models import ObjectImage, OriginalImage
+from seeding.models.data_models import ObjectImage, OriginalImage
 
 
 def _np_to_pil(img: np.ndarray) -> Image.Image:

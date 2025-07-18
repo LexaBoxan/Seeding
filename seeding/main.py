@@ -6,8 +6,8 @@ import sys
 from PyQt5.QtWidgets import QApplication
 import qt_material
 
-from .config import DEFAULT_WEIGHTS_PATH
-from .ui.main_window import ImageEditor
+from seeding.config import DEFAULT_WEIGHTS_PATH
+from seeding.ui.main_window import ImageEditor
 
 
 def main() -> None:

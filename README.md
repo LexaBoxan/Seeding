@@ -18,11 +18,7 @@ YOLOv8 и показывает результат в удобном дереве
 1. Установите Python 3.9 или новее.
 2. Создайте виртуальное окружение и установите зависимости:
 
-```bash
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-pip install -r seeding/requirements.txt
-```
+
 
 Для загрузки весов YOLOv8 можно задать переменную окружения
 `YOLO_WEIGHTS_PATH` или передать путь через аргумент `--weights` при запуске.
@@ -65,29 +61,24 @@ pip install -r seeding/requirements.txt
 - `utils.py` – функция `simple_nms` для подавления перекрывающихся боксов.
 - `models/data_models.py` – dataclass‑структуры `OriginalImage` и
   `ObjectImage` для хранения результатов.
-- `report.py` – функция `create_pdf_report` формирует отчёт в формате PDF.
+- `report.py` – функция `create_pdf_report` формирует отчёт в формате PDF и сохраняет в той же папе.
 
 ## Запуск приложения
 
 ```bash
-python -m seeding.main --weights /path/to/best.pt
+  python -m seeding.main --weights results/exp_yolov8_custom_best11/weights/best.pt
 ```
 
 Если `--weights` не указан, используется переменная `YOLO_WEIGHTS_PATH` или
-значение по умолчанию `weights/best.pt` из файла `config.py`.
+значение по умолчанию `results/exp_yolov8_custom_best11/weights/best.pt` из файла `config.py`.
 
 ## Тесты
 
-Для запуска тестов выполните:
 
-```bash
-PYTHONPATH=. pytest
-```
+Не работают, исправлю в дальнейшем.
 
-## Лицензия
 
-MIT License
 
 ## Автор
 
-Aleshkin Dev — [@aleshkin](https://t.me/aleshkin)
+Aleshkin Dev — [@diristhor](https://t.me/diristhor)

@@ -22,9 +22,9 @@ from PyQt5.QtWidgets import (
 )
 from ultralytics import YOLO
 
-from ..config import ROTATE_K
-from ..models.data_models import ObjectImage, OriginalImage
-from ..utils import simple_nms
+from seeding.config import ROTATE_K
+from seeding.models.data_models import ObjectImage, OriginalImage
+from seeding.utils import simple_nms
 from .tree_widget import LayerTreeWidget
 
 logger = logging.getLogger(__name__)

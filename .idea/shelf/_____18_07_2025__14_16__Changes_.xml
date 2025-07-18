@@ -1,0 +1,60 @@
+<changelist name="Несохраненные_изменения_перед_Обновление_в_18_07_2025,_14_16_[Changes]" date="1752823051833" recycled="true" deleted="true">
+  <option name="PATH" value="$PROJECT_DIR$/.idea/shelf/Несохраненные_изменения_перед_Обновление_в_18_07_2025,_14_16_[Changes]/shelved.patch" />
+  <option name="DESCRIPTION" value="Несохраненные изменения перед Обновление в 18.07.2025, 14:16 [Changes]" />
+  <binary>
+    <option name="AFTER_PATH" value="results/exp_yolov8_custom_best11/PR_curve.png" />
+    <option name="SHELVED_PATH" value="$PROJECT_DIR$/.idea/shelf/Несохраненные_изменения_перед_Обновление_в_18_07_2025,_14_16_[Changes]/PR_curve.png" />
+  </binary>
+  <binary>
+    <option name="AFTER_PATH" value="results/exp_yolov8_custom_best11/val_batch0_pred.jpg" />
+    <option name="SHELVED_PATH" value="$PROJECT_DIR$/.idea/shelf/Несохраненные_изменения_перед_Обновление_в_18_07_2025,_14_16_[Changes]/val_batch0_pred.jpg" />
+  </binary>
+  <binary>
+    <option name="AFTER_PATH" value="results/exp_yolov8_custom_best11/train_batch1.jpg" />
+    <option name="SHELVED_PATH" value="$PROJECT_DIR$/.idea/shelf/Несохраненные_изменения_перед_Обновление_в_18_07_2025,_14_16_[Changes]/train_batch1.jpg" />
+  </binary>
+  <binary>
+    <option name="AFTER_PATH" value="results/exp_yolov8_custom_best11/confusion_matrix_normalized.png" />
+    <option name="SHELVED_PATH" value="$PROJECT_DIR$/.idea/shelf/Несохраненные_изменения_перед_Обновление_в_18_07_2025,_14_16_[Changes]/confusion_matrix_normalized.png" />
+  </binary>
+  <binary>
+    <option name="AFTER_PATH" value="results/exp_yolov8_custom_best11/labels.jpg" />
+    <option name="SHELVED_PATH" value="$PROJECT_DIR$/.idea/shelf/Несохраненные_изменения_перед_Обновление_в_18_07_2025,_14_16_[Changes]/labels.jpg" />
+  </binary>
+  <binary>
+    <option name="AFTER_PATH" value="results/exp_yolov8_custom_best11/train_batch0.jpg" />
+    <option name="SHELVED_PATH" value="$PROJECT_DIR$/.idea/shelf/Несохраненные_изменения_перед_Обновление_в_18_07_2025,_14_16_[Changes]/train_batch0.jpg" />
+  </binary>
+  <binary>
+    <option name="AFTER_PATH" value="results/exp_yolov8_custom_best11/P_curve.png" />
+    <option name="SHELVED_PATH" value="$PROJECT_DIR$/.idea/shelf/Несохраненные_изменения_перед_Обновление_в_18_07_2025,_14_16_[Changes]/P_curve.png" />
+  </binary>
+  <binary>
+    <option name="AFTER_PATH" value="results/exp_yolov8_custom_best11/val_batch0_labels.jpg" />
+    <option name="SHELVED_PATH" value="$PROJECT_DIR$/.idea/shelf/Несохраненные_изменения_перед_Обновление_в_18_07_2025,_14_16_[Changes]/val_batch0_labels.jpg" />
+  </binary>
+  <binary>
+    <option name="AFTER_PATH" value="results/exp_yolov8_custom_best11/R_curve.png" />
+    <option name="SHELVED_PATH" value="$PROJECT_DIR$/.idea/shelf/Несохраненные_изменения_перед_Обновление_в_18_07_2025,_14_16_[Changes]/R_curve.png" />
+  </binary>
+  <binary>
+    <option name="AFTER_PATH" value="results/exp_yolov8_custom_best11/F1_curve.png" />
+    <option name="SHELVED_PATH" value="$PROJECT_DIR$/.idea/shelf/Несохраненные_изменения_перед_Обновление_в_18_07_2025,_14_16_[Changes]/F1_curve.png" />
+  </binary>
+  <binary>
+    <option name="AFTER_PATH" value="results/exp_yolov8_custom_best11/train_batch2.jpg" />
+    <option name="SHELVED_PATH" value="$PROJECT_DIR$/.idea/shelf/Несохраненные_изменения_перед_Обновление_в_18_07_2025,_14_16_[Changes]/train_batch2.jpg" />
+  </binary>
+  <binary>
+    <option name="AFTER_PATH" value="results/exp_yolov8_custom_best11/confusion_matrix.png" />
+    <option name="SHELVED_PATH" value="$PROJECT_DIR$/.idea/shelf/Несохраненные_изменения_перед_Обновление_в_18_07_2025,_14_16_[Changes]/confusion_matrix.png" />
+  </binary>
+  <binary>
+    <option name="AFTER_PATH" value="results/exp_yolov8_custom_best11/labels_correlogram.jpg" />
+    <option name="SHELVED_PATH" value="$PROJECT_DIR$/.idea/shelf/Несохраненные_изменения_перед_Обновление_в_18_07_2025,_14_16_[Changes]/labels_correlogram.jpg" />
+  </binary>
+  <binary>
+    <option name="AFTER_PATH" value="results/exp_yolov8_custom_best11/results.png" />
+    <option name="SHELVED_PATH" value="$PROJECT_DIR$/.idea/shelf/Несохраненные_изменения_перед_Обновление_в_18_07_2025,_14_16_[Changes]/results.png" />
+  </binary>
+</changelist>
