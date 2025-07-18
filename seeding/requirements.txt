@@ -5,4 +5,3 @@ opencv-python>=4.7.0
 Pillow>=9.4.0
 PyMuPDF>=1.22.0       # для работы с PDF (fitz)
 ultralytics>=8.0.0    # YOLOv8 (если используешь детектор)
-transformers>=4.25.0  # если используешь HuggingFace pipeline

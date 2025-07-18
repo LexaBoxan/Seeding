@@ -29,11 +29,16 @@ pip install -r seeding/requirements.txt
 └── seeding
     ├── __init__.py
     ├── main.py                # Точка входа
-    ├── ui_main.py             # Графический интерфейс
-    ├── tree_widget_example.py # Виджет дерева
-    ├── image_processor.py     # Заглушка алгоритмов
-    ├── test.py                # Пример загрузки
+    ├── utils.py               # Вспомогательные функции
+    ├── processing
+    │   ├── __init__.py
+    │   └── image_processor.py # Заглушка алгоритмов
+    ├── ui
+    │   ├── __init__.py
+    │   ├── main_window.py     # Графический интерфейс
+    │   └── tree_widget.py     # Виджет дерева
     ├── models
+    │   ├── __init__.py
     │   └── data_models.py     # dataclass'ы
     └── requirements.txt
 ```

@@ -1,7 +1,4 @@
-# models/dataclasses_me.py
-"""
-Dataclasses for хранение изображений и результатов детекции.
-"""
+"""Dataclasses для хранения изображений и результатов детекции."""
 
 from dataclasses import dataclass, field
 from typing import List, Optional, Union

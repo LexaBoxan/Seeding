@@ -1,14 +1,14 @@
-# tree_widget_example.py
-"""
-Виджет дерева для отображения оригинальных изображений и найденных объектов.
-"""
+"""Дерево слоёв для отображения оригиналов и найденных объектов."""
 
 from PyQt5.QtWidgets import QTreeWidget, QTreeWidgetItem
 from PyQt5.QtCore import Qt
 
 
-class TreeWidgetExample(QTreeWidget):
-    def __init__(self):
+class LayerTreeWidget(QTreeWidget):
+    """Простой QTreeWidget для отображения иерархии изображений."""
+
+    def __init__(self) -> None:
+        """Конструктор дерева слоёв."""
         super().__init__()
         self.setHeaderLabels(["Название", "Описание"])
 
