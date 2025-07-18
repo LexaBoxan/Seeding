@@ -1,29 +1,33 @@
-"""PDF report generation utilities."""
+"""Утилиты для формирования PDF-отчёта."""
 
 from __future__ import annotations
 
 import io
-from PIL import Image
+
+from typing import Iterable
+
+import cv2
 import numpy as np
-from reportlab.lib.pagesizes import A4
+from PIL import Image
 from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import mm
 from reportlab.platypus import (
-    SimpleDocTemplate,
-    Paragraph,
     Image as RLImage,
+    PageBreak,
+    Paragraph,
+    SimpleDocTemplate,
+    Spacer,
     Table,
     TableStyle,
-    Spacer,
-    PageBreak,
 )
-from reportlab.lib.styles import getSampleStyleSheet
 
-from .models.data_models import OriginalImage
+from .models.data_models import ObjectImage, OriginalImage
 
 
 def _np_to_pil(img: np.ndarray) -> Image.Image:
-    """Convert a numpy image (BGR or grayscale) to PIL.Image."""
+    """Преобразует изображение NumPy (BGR или оттенки серого) в `PIL.Image`."""
     if img is None:
         raise ValueError("Image is None")
     if img.ndim == 3:
@@ -36,34 +40,87 @@ def _np_to_pil(img: np.ndarray) -> Image.Image:
         return Image.fromarray(img)
 
 
+def _annotate_image(img: np.ndarray, objects: list[ObjectImage]) -> np.ndarray:
+    """Наносит на изображение рамки объектов с порядковыми номерами."""
+    annotated = img.copy()
+    for i, obj in enumerate(objects, start=1):
+        if obj.bbox:
+            x1, y1, x2, y2 = obj.bbox
+            cv2.rectangle(annotated, (x1, y1), (x2, y2), (0, 255, 0), 2)
+            cv2.putText(
+                annotated,
+                str(i),
+                (x1, max(y1 - 5, 0)),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.8,
+                (0, 255, 0),
+                2,
+            )
+    return annotated
+
+
+def _pil_to_buf(image: Image.Image, *, quality: int = 70) -> io.BytesIO:
+    """Сохраняет изображение в буфер JPEG для вставки в PDF.
+
+    Args:
+        image: Изображение PIL.
+        quality: Качество JPEG (1-95), чем ниже — тем меньше размер.
+
+    Returns:
+        Буфер с JPEG-данными.
+    """
+    buffer = io.BytesIO()
+    image.save(buffer, format="JPEG", quality=quality)
+    buffer.seek(0)
+    return buffer
+
+
+def _object_to_pil(obj: ObjectImage) -> Image.Image | None:
+    """Преобразует объект в `PIL.Image`, если возможно."""
+    if not obj.image:
+        return None
+    img = obj.image[0]
+    if isinstance(img, np.ndarray):
+        return _np_to_pil(img)
+    if isinstance(img, Image.Image):
+        return img
+    return None
+
 def create_pdf_report(data: OriginalImage, output_path: str) -> None:
-    """Create a PDF report with images and detected object tables."""
+    """Создаёт PDF-отчёт с результатами детекции.
+
+    На каждой странице показывается исходное изображение с рамками и номерами,
+    таблица характеристик и уменьшенные копии каждого найденного объекта.
+    Изображения сохраняются в формате JPEG с качеством 70 для снижения размера
+    итогового файла.
+    """
     doc = SimpleDocTemplate(output_path, pagesize=A4)
     styles = getSampleStyleSheet()
     story = []
 
     for idx, img in enumerate(data.images):
-        pil_img = _np_to_pil(img)
-        buf = io.BytesIO()
-        pil_img.save(buf, format="PNG")
-        buf.seek(0)
+        objs: list[ObjectImage] = []
+        if data.class_object_image and len(data.class_object_image) > idx:
+            objs = data.class_object_image[idx]
+
+        annotated_img = _annotate_image(img, objs)
+        pil_img = _np_to_pil(annotated_img)
 
         story.append(Paragraph(f"Page {idx + 1}", styles["Heading1"]))
 
         max_width = 160 * mm
         aspect = pil_img.height / float(pil_img.width)
-        img_elem = RLImage(buf, width=max_width, height=max_width * aspect)
+        img_elem = RLImage(
+            _pil_to_buf(pil_img), width=max_width, height=max_width * aspect
+        )
         story.append(img_elem)
         story.append(Spacer(1, 5 * mm))
 
-        objs = []
-        if data.class_object_image and len(data.class_object_image) > idx:
-            objs = data.class_object_image[idx]
-
-        table_data = [["Class", "Confidence", "BBox"]]
-        for obj in objs:
+        table_data = [["#", "Class", "Confidence", "BBox"]]
+        for i, obj in enumerate(objs, start=1):
             bbox = obj.bbox if obj.bbox else ("", "", "", "")
             table_data.append([
+                str(i),
                 obj.class_name,
                 f"{obj.confidence:.2f}",
                 str(bbox),
@@ -80,6 +137,21 @@ def create_pdf_report(data: OriginalImage, output_path: str) -> None:
             )
         )
         story.append(table)
+        story.append(Spacer(1, 5 * mm))
+
+        for i, obj in enumerate(objs, start=1):
+            pil_obj = _object_to_pil(obj)
+            if pil_obj is None:
+                continue
+            story.append(Paragraph(f"Объект {i}", styles["Heading3"]))
+            aspect_obj = pil_obj.height / float(pil_obj.width)
+            crop_elem = RLImage(
+                _pil_to_buf(pil_obj), width=60 * mm, height=60 * mm * aspect_obj
+            )
+            story.append(crop_elem)
+            story.append(Spacer(1, 2 * mm))
+
+        story.append(Spacer(1, 8 * mm))
 
         if idx < len(data.images) - 1:
             story.append(PageBreak())

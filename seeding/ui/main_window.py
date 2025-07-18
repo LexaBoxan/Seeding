@@ -1,31 +1,33 @@
 """Основное окно приложения."""
 
+import logging
+import os
+
+import cv2
+import fitz
+import numpy as np
+from PyQt5.QtCore import QPoint, Qt
+from PyQt5.QtGui import QIcon, QImage, QPixmap
 from PyQt5.QtWidgets import (
-    QMainWindow,
-    QWidget,
-    QVBoxLayout,
-    QHBoxLayout,
-    QLabel,
-    QToolBar,
     QAction,
     QFileDialog,
     QGroupBox,
+    QLabel,
+    QHBoxLayout,
+    QMainWindow,
     QScrollArea,
+    QToolBar,
+    QVBoxLayout,
+    QWidget,
 )
-from PyQt5.QtGui import QIcon, QPixmap, QImage
-from PyQt5.QtCore import Qt, QPoint
-import logging
-import os
-from ..models.data_models import OriginalImage, ObjectImage
-from .tree_widget import LayerTreeWidget
-from ..utils import simple_nms
+from ultralytics import YOLO
+
 from ..config import ROTATE_K
+from ..models.data_models import ObjectImage, OriginalImage
+from ..utils import simple_nms
+from .tree_widget import LayerTreeWidget
 
 logger = logging.getLogger(__name__)
-import numpy as np
-import cv2
-import fitz
-from ultralytics import YOLO
 
 
 class DraggableScrollArea(QScrollArea):
