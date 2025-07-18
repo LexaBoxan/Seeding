@@ -86,6 +86,26 @@ def _object_to_pil(obj: ObjectImage) -> Image.Image | None:
         return img
     return None
 
+
+def _rl_image_from_pil(image: Image.Image, max_w: float, max_h: float) -> RLImage:
+    """Создаёт элемент ReportLab с ограничением по размерам.
+
+    Args:
+        image: Исходное изображение PIL.
+        max_w: Максимальная ширина в пунктах.
+        max_h: Максимальная высота в пунктах.
+
+    Returns:
+        Элемент ``RLImage`` с подогнанными размерами.
+    """
+    aspect = image.height / float(image.width)
+    width_pt = max_w
+    height_pt = width_pt * aspect
+    if height_pt > max_h:
+        height_pt = max_h
+        width_pt = height_pt / aspect
+    return RLImage(_pil_to_buf(image), width=width_pt, height=height_pt)
+
 def create_pdf_report(data: OriginalImage, output_path: str) -> None:
     """Создаёт PDF-отчёт с результатами детекции.
 
@@ -106,15 +126,11 @@ def create_pdf_report(data: OriginalImage, output_path: str) -> None:
         annotated_img = _annotate_image(img, objs)
         pil_img = _np_to_pil(annotated_img)
 
-        story.append(Paragraph(f"Page {idx + 1}", styles["Heading1"]))
+        story.append(Paragraph(f"Страница {idx + 1}", styles["Heading1"]))
 
         max_width = 160 * mm
         max_height = 200 * mm
-        aspect = pil_img.height / float(pil_img.width)
-        width_pt = min(max_width, max_height / aspect)
-        img_elem = RLImage(
-            _pil_to_buf(pil_img), width=width_pt, height=width_pt * aspect
-        )
+        img_elem = _rl_image_from_pil(pil_img, max_width, max_height)
         story.append(img_elem)
         story.append(Spacer(1, 5 * mm))
 
@@ -139,18 +155,19 @@ def create_pdf_report(data: OriginalImage, output_path: str) -> None:
             )
         )
         story.append(table)
-        story.append(Spacer(1, 5 * mm))
+        story.append(PageBreak())
 
+        obj_per_page = 3
         for i, obj in enumerate(objs, start=1):
             pil_obj = _object_to_pil(obj)
             if pil_obj is None:
                 continue
             story.append(Paragraph(f"Объект {i}", styles["Heading3"]))
-            crop_elem = RLImage(_pil_to_buf(pil_obj), width=60 * mm)
+            crop_elem = _rl_image_from_pil(pil_obj, 60 * mm, 80 * mm)
             story.append(crop_elem)
-            story.append(Spacer(1, 2 * mm))
-
-        story.append(Spacer(1, 8 * mm))
+            story.append(Spacer(1, 5 * mm))
+            if i % obj_per_page == 0 and i != len(objs):
+                story.append(PageBreak())
 
         if idx < len(data.images) - 1:
             story.append(PageBreak())
