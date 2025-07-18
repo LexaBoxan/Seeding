@@ -109,9 +109,11 @@ def create_pdf_report(data: OriginalImage, output_path: str) -> None:
         story.append(Paragraph(f"Page {idx + 1}", styles["Heading1"]))
 
         max_width = 160 * mm
+        max_height = 200 * mm
         aspect = pil_img.height / float(pil_img.width)
+        width_pt = min(max_width, max_height / aspect)
         img_elem = RLImage(
-            _pil_to_buf(pil_img), width=max_width, height=max_width * aspect
+            _pil_to_buf(pil_img), width=width_pt, height=width_pt * aspect
         )
         story.append(img_elem)
         story.append(Spacer(1, 5 * mm))
@@ -144,10 +146,7 @@ def create_pdf_report(data: OriginalImage, output_path: str) -> None:
             if pil_obj is None:
                 continue
             story.append(Paragraph(f"Объект {i}", styles["Heading3"]))
-            aspect_obj = pil_obj.height / float(pil_obj.width)
-            crop_elem = RLImage(
-                _pil_to_buf(pil_obj), width=60 * mm, height=60 * mm * aspect_obj
-            )
+            crop_elem = RLImage(_pil_to_buf(pil_obj), width=60 * mm)
             story.append(crop_elem)
             story.append(Spacer(1, 2 * mm))
 
