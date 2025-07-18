@@ -16,6 +16,7 @@ dependencies = [
     "Pillow>=9.4.0",
     "PyMuPDF>=1.22.0",
     "ultralytics>=8.0.0",
+    "reportlab>=3.6.0",
 ]
 
 [project.scripts]
