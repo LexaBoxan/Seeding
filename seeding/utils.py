@@ -1,6 +1,9 @@
 """Вспомогательные функции для обработки изображений."""
 
+import logging
 import numpy as np
+
+logger = logging.getLogger(__name__)
 
 
 def simple_nms(boxes, scores, iou_threshold=0.4):
@@ -15,7 +18,7 @@ def simple_nms(boxes, scores, iou_threshold=0.4):
         List[int]: Индексы боксов, которые следует оставить.
     """
     if not boxes:
-        print("simple_nms: пустой список боксов")
+        logger.debug("simple_nms: пустой список боксов")
         return []
 
     boxes = np.array(boxes)
@@ -37,5 +40,5 @@ def simple_nms(boxes, scores, iou_threshold=0.4):
         iou = inter / (areas[i] + areas[order[1:]] - inter)
         inds = np.where(iou <= iou_threshold)[0]
         order = order[inds + 1]
-    print(f"simple_nms: после NMS осталось {len(keep)} боксов")
+    logger.debug("simple_nms: после NMS осталось %s боксов", len(keep))
     return keep

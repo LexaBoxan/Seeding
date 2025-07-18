@@ -14,9 +14,13 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtGui import QIcon, QPixmap, QImage
 from PyQt5.QtCore import Qt, QPoint
+import logging
 from ..models.data_models import OriginalImage, ObjectImage
 from .tree_widget import LayerTreeWidget
 from ..utils import simple_nms
+from ..config import ROTATE_K
+
+logger = logging.getLogger(__name__)
 import numpy as np
 import cv2
 import fitz
@@ -72,16 +76,18 @@ class ImageEditor(QMainWindow):
     Позволяет загружать файлы, управлять слоями и искать сеянцы при помощи YOLOv8.
     """
 
-    def __init__(self):
-        """Инициализация главного окна и загрузка модели."""
+    def __init__(self, weights_path: str):
+        """Инициализирует окно и загружает модель.
+
+        Args:
+            weights_path: Путь к файлу весов YOLOv8.
+        """
         super().__init__()
         self.setWindowTitle("Современный UI для работы с изображениями")
         self.setGeometry(100, 100, 1200, 800)
         self.zoom_factor = 1.0
         self.image_storage = OriginalImage()
-        self.model = YOLO(
-            "E:/_JOB_/_Python/pythonProject/results/exp_yolov8_custom_best11/weights/best.pt"
-        )
+        self.model = YOLO(weights_path)
 
         self.init_ui()
 
@@ -200,7 +206,7 @@ class ImageEditor(QMainWindow):
             else:
                 return
 
-    def open_image(self):
+    def open_image(self) -> None:
         """Открывает диалог выбора файла и загружает изображение или PDF."""
         self.image_storage = OriginalImage()
         file_name, _ = QFileDialog.getOpenFileName(
@@ -226,16 +232,16 @@ class ImageEditor(QMainWindow):
                 [] for _ in range(len(self.image_storage.images))
             ]
 
-    def load_image(self, file_name):
+    def load_image(self, file_name: str) -> np.ndarray | None:
         """Загружает изображение с диска."""
         try:
             image = cv2.imread(file_name)
             return image
         except Exception as e:
-            print("Ошибка при загрузке изображения:", e)
+            logger.error("Ошибка при загрузке изображения: %s", e)
             return None
 
-    def load_pdf(self, pdf_path):
+    def load_pdf(self, pdf_path: str) -> None:
         """Загружает все страницы PDF как изображения."""
         try:
             doc = fitz.open(pdf_path)
@@ -265,9 +271,9 @@ class ImageEditor(QMainWindow):
             ]
 
         except Exception as e:
-            print("Ошибка при загрузке PDF:", e)
+            logger.error("Ошибка при загрузке PDF: %s", e)
 
-    def display_image(self, image):
+    def display_image(self, image: np.ndarray) -> None:
         """Отображает переданное изображение в центральной области."""
         if image is None or not isinstance(image, np.ndarray):
             return
@@ -298,24 +304,24 @@ class ImageEditor(QMainWindow):
         self.zoom_factor = self.min_fit_zoom
         self.update_image_zoom()
 
-    def zoom_in(self):
+    def zoom_in(self) -> None:
         """Увеличивает изображение."""
         self.zoom_factor *= 1.25
         self.update_image_zoom()
 
-    def zoom_out(self):
+    def zoom_out(self) -> None:
         """Уменьшает изображение."""
         self.zoom_factor /= 1.25
         if self.zoom_factor < self.min_fit_zoom:
             self.zoom_factor = self.min_fit_zoom
         self.update_image_zoom()
 
-    def fit_to_window(self):
+    def fit_to_window(self) -> None:
         """Масштабирует изображение так, чтобы оно поместилось в окно."""
         self.zoom_factor = self.min_fit_zoom
         self.update_image_zoom()
 
-    def update_image_zoom(self):
+    def update_image_zoom(self) -> None:
         """Применяет текущий масштаб к изображению."""
         if hasattr(self, "_original_pixmap"):
             pixmap = self._original_pixmap
@@ -327,27 +333,27 @@ class ImageEditor(QMainWindow):
             self.image_label.setPixmap(scaled_pixmap)
             self.image_label.adjustSize()
 
-    def rotate_image(self):
+    def rotate_image(self) -> None:
         """Поворачивает выбранное изображение или crop на 90 градусов."""
         selected_item = self.tree_widget.currentItem()
         if selected_item is None:
-            print("rotate_image: Нет выбранного элемента в дереве")
+            logger.warning("rotate_image: Нет выбранного элемента в дереве")
             return
 
         item_data = selected_item.data(0, Qt.UserRole)
         if not item_data:
-            print("rotate_image: Нет данных для выбранного элемента")
+            logger.warning("rotate_image: Нет данных для выбранного элемента")
             return
 
         if item_data["type"] in ("original", "pdf"):
             idx = item_data["index"]
             image = self.image_storage.images[idx]
             if image is None:
-                print("rotate_image: Оригинал отсутствует")
+                logger.warning("rotate_image: Оригинал отсутствует")
                 return
-            rotated = np.rot90(image, k=-1)
+            rotated = np.rot90(image, k=ROTATE_K)
             self.image_storage.images[idx] = rotated
-            print(f"rotate_image: Изображение {idx} повернуто")
+            logger.info("rotate_image: Изображение %s повернуто", idx)
             self.display_image(rotated)
 
         elif item_data["type"] == "seeding":
@@ -355,24 +361,28 @@ class ImageEditor(QMainWindow):
             seed_idx = item_data["index"]
             obj = self.image_storage.class_object_image[parent_idx][seed_idx]
             if not obj.image or obj.image[0] is None:
-                print("rotate_image: Crop пустой")
+                logger.warning("rotate_image: Crop пустой")
                 return
             crop = obj.image[0]
-            rotated = np.rot90(crop, k=-1)
+            rotated = np.rot90(crop, k=ROTATE_K)
             self.image_storage.class_object_image[parent_idx][seed_idx].image[
                 0
             ] = rotated
-            print(f"rotate_image: Crop {seed_idx} (от оригинала {parent_idx}) повернут")
+            logger.info(
+                "rotate_image: Crop %s (от оригинала %s) повернут",
+                seed_idx,
+                parent_idx,
+            )
             self.display_image(rotated)
         else:
-            print("rotate_image: Неизвестный тип данных")
+            logger.warning("rotate_image: Неизвестный тип данных")
             return
 
-    def create_mask(self):
+    def create_mask(self) -> None:
         """Создание маски (функциональность пока не реализована)."""
-        print("Создание маски — пока не реализовано")
+        logger.info("Создание маски — пока не реализовано")
 
-    def find_seedlings(self):
+    def find_seedlings(self) -> None:
         """Запускает модель YOLOv8 для поиска сеянцев на текущем изображении.
 
         Результаты проходят через простую процедуру NMS. Каждая найденная
@@ -385,24 +395,24 @@ class ImageEditor(QMainWindow):
                 [] for _ in range(len(self.image_storage.images))
             ]
 
-        print("find_seedlings: start")
+        logger.info("find_seedlings: start")
         current_index = getattr(self, "_active_image_index", 0)
-        print(f"find_seedlings: current_index = {current_index}")
+        logger.debug("find_seedlings: current_index = %s", current_index)
 
         if not self.image_storage.images:
-            print("find_seedlings: Нет изображений для обработки")
+            logger.warning("find_seedlings: Нет изображений для обработки")
             return
 
         image = self.image_storage.images[current_index]
         if image is None:
-            print("find_seedlings: Текущее изображение пустое")
+            logger.warning("find_seedlings: Текущее изображение пустое")
             return
 
         try:
             results = self.model(image)
-            print(f"find_seedlings: модель вернула {len(results[0].boxes)} боксов")
+            logger.debug("find_seedlings: модель вернула %s боксов", len(results[0].boxes))
         except Exception as e:
-            print(f"Ошибка при вызове модели: {e}")
+            logger.error("Ошибка при вызове модели: %s", e)
             return
 
         try:
@@ -426,8 +436,9 @@ class ImageEditor(QMainWindow):
                     x1, x2 = max(0, x1), min(x2, w)
                     y1, y2 = max(0, y1), min(y2, h)
                     if x2 <= x1 or y2 <= y1:
-                        print(
-                            f"find_seedlings: пропускаем некорректный bbox {x1, y1, x2, y2}"
+                        logger.debug(
+                            "find_seedlings: пропускаем некорректный bbox %s",
+                            (x1, y1, x2, y2),
                         )
                         continue
 
@@ -441,9 +452,13 @@ class ImageEditor(QMainWindow):
                         }
                     )
 
-            print(f"find_seedlings: найдено {len(boxes)} боксов, запускаем NMS")
+            logger.info(
+                "find_seedlings: найдено %s боксов, запускаем NMS", len(boxes)
+            )
             indices = simple_nms(boxes, scores, iou_threshold=0.4)
-            print(f"find_seedlings: после NMS осталось {len(indices)} боксов")
+            logger.info(
+                "find_seedlings: после NMS осталось %s боксов", len(indices)
+            )
 
             # Добавляем в dataclass и дерево
             self.image_storage.class_object_image[current_index] = []
@@ -455,7 +470,7 @@ class ImageEditor(QMainWindow):
                 # Проверяем ориентацию crop'a. Если ширина больше высоты,
                 # поворачиваем изображение на 90 градусов, чтобы оно стало вертикальным
                 if crop.shape[1] > crop.shape[0]:
-                    crop = np.rot90(crop)
+                    crop = np.rot90(crop, k=ROTATE_K)
                 obj = ObjectImage(
                     class_name=data["class_name"],
                     confidence=data["score"],
@@ -473,16 +488,18 @@ class ImageEditor(QMainWindow):
                     crop,
                 )
 
-            print("find_seedlings: завершено")
+            logger.info("find_seedlings: завершено")
 
         except Exception as e:
-            print(f"Ошибка во время NMS или обработки результатов: {e}")
+            logger.error(
+                "Ошибка во время NMS или обработки результатов: %s", e
+            )
             return
 
-    def find_all_seedlings(self):
+    def find_all_seedlings(self) -> None:
         """Последовательно запускает поиск сеянцев на всех изображениях."""
         if not self.image_storage.images:
-            print("find_all_seedlings: Нет изображений")
+            logger.warning("find_all_seedlings: Нет изображений")
             return
 
         for idx, image in enumerate(self.image_storage.images):
@@ -490,9 +507,9 @@ class ImageEditor(QMainWindow):
                 idx  # чтобы всё работало так же, как для find_seedlings
             )
             self.find_seedlings()
-        print("find_all_seedlings: завершено")
+        logger.info("find_all_seedlings: завершено")
 
-    def display_image_with_boxes(self, idx):
+    def display_image_with_boxes(self, idx: int) -> None:
         """Отображает изображение с нанесёнными рамками объектов."""
         image = self.image_storage.images[idx].copy()
         if (
@@ -518,10 +535,10 @@ class ImageEditor(QMainWindow):
                     )
         self.display_image(image)
 
-    def classify(self):
+    def classify(self) -> None:
         """Классифицирует найденные объекты (заглушка)."""
-        print("Классификация — пока не реализовано")
+        logger.info("Классификация — пока не реализовано")
 
-    def create_report(self):
+    def create_report(self) -> None:
         """Создание итогового отчёта (заглушка)."""
-        print("Создание отчёта — пока не реализовано")
+        logger.info("Создание отчёта — пока не реализовано")
