@@ -1,11 +1,13 @@
-import sys
 import argparse
-import os
 import logging
+import os
+import sys
+
 from PyQt5.QtWidgets import QApplication
-from .ui.main_window import ImageEditor
-from .config import DEFAULT_WEIGHTS_PATH
-import qt_material  # Импортируйте qt_material после PyQt5
+import qt_material
+
+from seeding.config import DEFAULT_WEIGHTS_PATH
+from seeding.ui.main_window import ImageEditor
 
 
 def main() -> None:

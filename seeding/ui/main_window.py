@@ -1,30 +1,33 @@
 """Основное окно приложения."""
 
+import logging
+import os
+
+import cv2
+import fitz
+import numpy as np
+from PyQt5.QtCore import QPoint, Qt
+from PyQt5.QtGui import QIcon, QImage, QPixmap
 from PyQt5.QtWidgets import (
-    QMainWindow,
-    QWidget,
-    QVBoxLayout,
-    QHBoxLayout,
-    QLabel,
-    QToolBar,
     QAction,
     QFileDialog,
     QGroupBox,
+    QLabel,
+    QHBoxLayout,
+    QMainWindow,
     QScrollArea,
+    QToolBar,
+    QVBoxLayout,
+    QWidget,
 )
-from PyQt5.QtGui import QIcon, QPixmap, QImage
-from PyQt5.QtCore import Qt, QPoint
-import logging
-from ..models.data_models import OriginalImage, ObjectImage
+from ultralytics import YOLO
+
+from seeding.config import ROTATE_K
+from seeding.models.data_models import ObjectImage, OriginalImage
+from seeding.utils import simple_nms
 from .tree_widget import LayerTreeWidget
-from ..utils import simple_nms
-from ..config import ROTATE_K
 
 logger = logging.getLogger(__name__)
-import numpy as np
-import cv2
-import fitz
-from ultralytics import YOLO
 
 
 class DraggableScrollArea(QScrollArea):
@@ -540,5 +543,17 @@ class ImageEditor(QMainWindow):
         logger.info("Классификация — пока не реализовано")
 
     def create_report(self) -> None:
-        """Создание итогового отчёта (заглушка)."""
-        logger.info("Создание отчёта — пока не реализовано")
+        """Создаёт PDF-отчёт по текущим результатам детекции."""
+        if not self.image_storage.images:
+            logger.warning("create_report: Нет данных для отчёта")
+            return
+
+        base_path, _ = os.path.splitext(self.image_storage.file_path)
+        output_path = base_path + "_report.pdf"
+        try:
+            from ..report import create_pdf_report
+
+            create_pdf_report(self.image_storage, output_path)
+            logger.info("Отчёт сохранён: %s", output_path)
+        except Exception as e:
+            logger.error("Ошибка при создании отчёта: %s", e)

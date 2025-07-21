@@ -1,0 +1,18 @@
+Index: seeding/main.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import sys\r\nfrom PyQt5.QtWidgets import QApplication\r\nfrom .ui_main import ImageEditor\r\nimport qt_material  # Импортируйте qt_material после PyQt5\r\n\r\n\r\ndef main():\r\n    app = QApplication(sys.argv)\r\n    qt_material.apply_stylesheet(app, theme=\"dark_blue.xml\")\r\n    window = ImageEditor()\r\n    window.show()\r\n    sys.exit(app.exec_())\r\n\r\n\r\nif __name__ == \"__main__\":\r\n    main()\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/seeding/main.py b/seeding/main.py
+--- a/seeding/main.py	(revision 7dc6d685b507d7cdf8f9ececb198b5c783c249d5)
++++ b/seeding/main.py	(date 1752740048921)
+@@ -1,6 +1,6 @@
+ import sys
+ from PyQt5.QtWidgets import QApplication
+-from .ui_main import ImageEditor
++from ui_main import ImageEditor
+ import qt_material  # Импортируйте qt_material после PyQt5
+ 
+ 
