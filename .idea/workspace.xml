@@ -6,10 +6,46 @@
   <component name="ChangeListManager">
     <list default="true" id="300734ec-daa0-4c66-b3b7-98db00b5250b" name="Changes" comment="Add files via upload">
       <changelist_data name="LexaBoxan" email="80101881+lexaboxan@users.noreply.github.com" automatic="false" />
+      <change afterPath="$PROJECT_DIR$/PDF.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/_____17_07_2025__15_26__Changes_1.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/_____18_07_2025__14_16__Changes_.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/___rebasing__Changes_2.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Незафиксированные_изменения_до_rebasing_[Changes]2/F1_curve.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Незафиксированные_изменения_до_rebasing_[Changes]2/PR_curve.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Незафиксированные_изменения_до_rebasing_[Changes]2/P_curve.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Незафиксированные_изменения_до_rebasing_[Changes]2/R_curve.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Незафиксированные_изменения_до_rebasing_[Changes]2/confusion_matrix.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Незафиксированные_изменения_до_rebasing_[Changes]2/confusion_matrix_normalized.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Незафиксированные_изменения_до_rebasing_[Changes]2/labels.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Незафиксированные_изменения_до_rebasing_[Changes]2/labels_correlogram.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Незафиксированные_изменения_до_rebasing_[Changes]2/results.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Незафиксированные_изменения_до_rebasing_[Changes]2/shelved.patch" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Незафиксированные_изменения_до_rebasing_[Changes]2/train_batch0.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Незафиксированные_изменения_до_rebasing_[Changes]2/train_batch1.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Незафиксированные_изменения_до_rebasing_[Changes]2/train_batch2.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Незафиксированные_изменения_до_rebasing_[Changes]2/val_batch0_labels.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Незафиксированные_изменения_до_rebasing_[Changes]2/val_batch0_pred.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Несохраненные_изменения_перед_Извлечение_в_17_07_2025,_15_26_[Changes]1/shelved.patch" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Несохраненные_изменения_перед_Обновление_в_18_07_2025,_14_16_[Changes]/F1_curve.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Несохраненные_изменения_перед_Обновление_в_18_07_2025,_14_16_[Changes]/PR_curve.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Несохраненные_изменения_перед_Обновление_в_18_07_2025,_14_16_[Changes]/P_curve.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Несохраненные_изменения_перед_Обновление_в_18_07_2025,_14_16_[Changes]/R_curve.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Несохраненные_изменения_перед_Обновление_в_18_07_2025,_14_16_[Changes]/confusion_matrix.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Несохраненные_изменения_перед_Обновление_в_18_07_2025,_14_16_[Changes]/confusion_matrix_normalized.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Несохраненные_изменения_перед_Обновление_в_18_07_2025,_14_16_[Changes]/labels.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Несохраненные_изменения_перед_Обновление_в_18_07_2025,_14_16_[Changes]/labels_correlogram.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Несохраненные_изменения_перед_Обновление_в_18_07_2025,_14_16_[Changes]/results.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Несохраненные_изменения_перед_Обновление_в_18_07_2025,_14_16_[Changes]/shelved.patch" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Несохраненные_изменения_перед_Обновление_в_18_07_2025,_14_16_[Changes]/train_batch0.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Несохраненные_изменения_перед_Обновление_в_18_07_2025,_14_16_[Changes]/train_batch1.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Несохраненные_изменения_перед_Обновление_в_18_07_2025,_14_16_[Changes]/train_batch2.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Несохраненные_изменения_перед_Обновление_в_18_07_2025,_14_16_[Changes]/val_batch0_labels.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Несохраненные_изменения_перед_Обновление_в_18_07_2025,_14_16_[Changes]/val_batch0_pred.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/seeding/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/seeding/config.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/seeding/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/seeding/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/seeding/report.py" beforeDir="false" afterPath="$PROJECT_DIR$/seeding/report.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/qt-material/examples/full_features/my_theme.xml" beforeDir="false" afterPath="$PROJECT_DIR$/qt-material/examples/full_features/my_theme.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/seeding/ui/main_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/seeding/ui/main_window.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -79,14 +115,16 @@
     "Python.main_window.executor": "Run",
     "Python.ui_main.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
     "git-widget-placeholder": "TestV1.5",
-    "last_opened_file_path": "E:/_JOB_/_Python",
+    "last_opened_file_path": "E:/_JOB_/_Python/SeedingV1.1",
     "node.js.detected.package.eslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "preferences.language.and.region",
-    "two.files.diff.last.used.folder": "E:/_JOB_/_Python/Seeding",
+    "settings.editor.selected.configurable": "preferences.pluginManager",
+    "two.files.diff.last.used.file": "E:/_JOB_/_Python/Seeding/README.md",
+    "two.files.diff.last.used.folder": "E:/_JOB_/_Python/SeedingV1.1",
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
@@ -124,7 +162,11 @@
       <workItem from="1752734748624" duration="650000" />
       <workItem from="1752735421272" duration="90000" />
       <workItem from="1752735525852" duration="133000" />
-      <workItem from="1752735667761" duration="20495000" />
+      <workItem from="1752735667761" duration="34096000" />
+      <workItem from="1753091235978" duration="5468000" />
+      <workItem from="1755429724756" duration="42000" />
+      <workItem from="1755429791771" duration="184000" />
+      <workItem from="1755429988831" duration="1007000" />
     </task>
     <servers />
   </component>
