@@ -178,11 +178,10 @@ class ImageEditor(QMainWindow):
         self.right_panel = QGroupBox("Слои")
         layout = QVBoxLayout()
         self.tree_widget = LayerTreeWidget()
-        layout.addWidget(self.tree_widget)
 
         scroll_area = QScrollArea()
-        scroll_area.setWidget(self.tree_widget)
         scroll_area.setWidgetResizable(True)
+        scroll_area.setWidget(self.tree_widget)
         layout.addWidget(scroll_area)
 
         self.tree_widget.itemClicked.connect(self.on_tree_item_clicked)

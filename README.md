@@ -82,3 +82,4 @@ YOLOv8 и показывает результат в удобном дереве
 ## Автор
 
 Aleshkin Dev — [@diristhor](https://t.me/diristhor)
+
