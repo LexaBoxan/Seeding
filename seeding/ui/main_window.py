@@ -235,6 +235,11 @@ class ImageEditor(QMainWindow):
                 image = self.load_image(file_name)
                 if image is not None:
                     self.image_storage.images.append(image)
+                    self.display_image(image)
+                    self._active_image_index = 0
+                    self.tree_widget.add_root_item(
+                        "Оригинал", "Исходное изображение", 0, "original", image
+                    )
 
             # Обязательно инициализируем пустые списки для найденных объектов
             self.image_storage.class_object_image = [
