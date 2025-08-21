@@ -6,7 +6,7 @@ import os
 import cv2
 import fitz
 import numpy as np
-from PyQt5.QtCore import QPoint, Qt
+from PyQt5.QtCore import QPoint, Qt, QThread, pyqtSignal
 from PyQt5.QtGui import QIcon, QImage, QPixmap
 
 from PyQt5.QtWidgets import (
@@ -19,6 +19,7 @@ from PyQt5.QtWidgets import (
     QSplitter,
 
     QToolBar,
+    QProgressBar,
     QVBoxLayout,
     QWidget,
 )
@@ -74,6 +75,28 @@ class DraggableScrollArea(QScrollArea):
             super().mouseReleaseEvent(event)
 
 
+class DetectionWorker(QThread):
+    """Worker для выполнения детекции в отдельном потоке."""
+
+    result_ready = pyqtSignal(int, object)
+
+    def __init__(self, index: int, image: np.ndarray, model: YOLO | None = None, weights_path: str | None = None):
+        super().__init__()
+        self.index = index
+        self.image = image
+        self.model = model
+        self.weights_path = weights_path
+
+    def run(self) -> None:  # pragma: no cover - поток
+        model = self.model
+        if model is None and self.weights_path:
+            model = YOLO(self.weights_path)
+        if model is None:
+            return
+        results = model(self.image)
+        self.result_ready.emit(self.index, results)
+
+
 class ImageEditor(QMainWindow):
     """
     Главное окно приложения для работы с изображениями и PDF.
@@ -92,6 +115,7 @@ class ImageEditor(QMainWindow):
         self.setGeometry(100, 100, 1200, 800)
         self.zoom_factor = 1.0
         self.image_storage = OriginalImage()
+        self.weights_path = weights_path
         self.model = YOLO(weights_path)
 
         self.init_ui()
@@ -406,62 +430,24 @@ class ImageEditor(QMainWindow):
         """Создание маски (функциональность пока не реализована)."""
         logger.info("Создание маски — пока не реализовано")
 
-    def find_seedlings(self) -> None:
-        """Запускает модель YOLOv8 для поиска сеянцев на текущем изображении.
-
-        Результаты проходят через простую процедуру NMS. Каждая найденная
-        область добавляется в хранилище `image_storage` и отображается в дереве
-        слоёв. Если ширина вырезанного участка больше его высоты, изображение
-        поворачивается на 90 градусов для вертикальной ориентации.
-        """
-        if self.image_storage.class_object_image is None:
-            self.image_storage.class_object_image = [
-                [] for _ in range(len(self.image_storage.images))
-            ]
-
-        logger.info("find_seedlings: start")
-        current_index = getattr(self, "_active_image_index", 0)
-        logger.debug("find_seedlings: current_index = %s", current_index)
-
-        if not self.image_storage.images:
-            logger.warning("find_seedlings: Нет изображений для обработки")
-            return
-
-        prev_state = (
-            self.progress_bar.minimum(),
-            self.progress_bar.maximum(),
-            self.progress_bar.value(),
-            self.progress_bar.isVisible(),
-        )
+    def _on_detection_start(self) -> None:
+        """Показывает прогресс-бар при запуске worker."""
         self.progress_bar.setRange(0, 0)
         self.progress_bar.setVisible(True)
 
-        image = self.image_storage.images[current_index]
-        if image is None:
-            logger.warning("find_seedlings: Текущее изображение пустое")
-            if not prev_state[3]:
-                self.progress_bar.setVisible(False)
-            self.progress_bar.setRange(prev_state[0], prev_state[1])
-            self.progress_bar.setValue(prev_state[2])
-            return
+    def _on_detection_finished(self) -> None:
+        """Скрывает прогресс-бар после завершения worker."""
+        self.progress_bar.setRange(0, 1)
+        self.progress_bar.setValue(0)
+        self.progress_bar.setVisible(False)
 
+    def _on_detection_result(self, index: int, results) -> None:
+        """Обрабатывает результаты детекции и обновляет дерево."""
+        image = self.image_storage.images[index]
         try:
-            results = self.model(image)
-            logger.debug("find_seedlings: модель вернула %s боксов", len(results[0].boxes))
-        except Exception as e:
-            logger.error("Ошибка при вызове модели: %s", e)
-            self.progress_bar.setRange(prev_state[0], prev_state[1])
-            self.progress_bar.setValue(prev_state[2])
-            if not prev_state[3]:
-                self.progress_bar.setVisible(False)
-            return
-
-        try:
-            # Здесь дальше по коду — NMS и обработка
-            # Пример простой NMS, как я писал ранее, чтобы избежать cv2.dnn.NMSBoxes
-            boxes = []
-            scores = []
-            class_boxes_data = []
+            boxes: list[list[int]] = []
+            scores: list[float] = []
+            class_boxes_data: list[dict] = []
             for box in results[0].boxes:
                 class_id = int(box.cls)
                 class_name = results[0].names[class_id]
@@ -501,15 +487,15 @@ class ImageEditor(QMainWindow):
                 "find_seedlings: после NMS осталось %s боксов", len(indices)
             )
 
-            # Добавляем в dataclass и дерево
-            self.image_storage.class_object_image[current_index] = []
-            parent_item = self.tree_widget.topLevelItem(current_index)
+            self.image_storage.class_object_image[index] = []
+            parent_item = self.tree_widget.topLevelItem(index)
+            if parent_item is not None:
+                for i in reversed(range(parent_item.childCount())):
+                    parent_item.takeChild(i)
             for i_out, i in enumerate(indices):
                 data = class_boxes_data[i]
                 x1, y1, x2, y2 = data["coords"]
                 crop = image[y1:y2, x1:x2].copy()
-                # Проверяем ориентацию crop'a. Если ширина больше высоты,
-                # поворачиваем изображение на 90 градусов, чтобы оно стало вертикальным
                 if crop.shape[1] > crop.shape[0]:
                     crop = np.rot90(crop, k=ROTATE_K)
                 obj = ObjectImage(
@@ -518,32 +504,57 @@ class ImageEditor(QMainWindow):
                     image=[crop],
                     bbox=(x1, y1, x2, y2),
                 )
-                self.image_storage.class_object_image[current_index].append(obj)
+                self.image_storage.class_object_image[index].append(obj)
                 self.tree_widget.add_child_item(
                     parent_item,
-                    f"Seeding{i_out + 1}",  # вместо "Сеянец {i_out + 1}"
+                    f"Seeding{i_out + 1}",
                     f"Уверенность: {data['score']:.2f}",
-                    current_index,
+                    index,
                     i_out,
                     "seeding",
                     crop,
                 )
-
+            self.display_image_with_boxes(index)
             logger.info("find_seedlings: завершено")
-        except Exception as e:
-            logger.error(
-                "Ошибка во время NMS или обработки результатов: %s", e
-            )
-            if not prev_state[3]:
-                self.progress_bar.setVisible(False)
-            self.progress_bar.setRange(prev_state[0], prev_state[1])
-            self.progress_bar.setValue(prev_state[2])
+        except Exception as e:  # pragma: no cover - логирование
+            logger.error("Ошибка во время NMS или обработки результатов: %s", e)
+
+    def find_seedlings(self) -> None:
+        """Запускает модель YOLOv8 для поиска сеянцев на текущем изображении.
+
+        Результаты проходят через простую процедуру NMS. Каждая найденная
+        область добавляется в хранилище `image_storage` и отображается в дереве
+        слоёв. Если ширина вырезанного участка больше его высоты, изображение
+        поворачивается на 90 градусов для вертикальной ориентации.
+        """
+        if self.image_storage.class_object_image is None:
+            self.image_storage.class_object_image = [
+                [] for _ in range(len(self.image_storage.images))
+            ]
+
+        logger.info("find_seedlings: start")
+        current_index = getattr(self, "_active_image_index", 0)
+        logger.debug("find_seedlings: current_index = %s", current_index)
+
+        if not self.image_storage.images:
+            logger.warning("find_seedlings: Нет изображений для обработки")
             return
 
-        self.progress_bar.setRange(prev_state[0], prev_state[1])
-        self.progress_bar.setValue(prev_state[2])
-        if not prev_state[3]:
-            self.progress_bar.setVisible(False)
+        image = self.image_storage.images[current_index]
+        if image is None:
+            logger.warning("find_seedlings: Текущее изображение пустое")
+            return
+
+        self.worker = DetectionWorker(
+            index=current_index,
+            image=image,
+            model=self.model,
+            weights_path=self.weights_path,
+        )
+        self.worker.started.connect(self._on_detection_start)
+        self.worker.result_ready.connect(self._on_detection_result)
+        self.worker.finished.connect(self._on_detection_finished)
+        self.worker.start()
 
     def find_all_seedlings(self) -> None:
         """Последовательно запускает поиск сеянцев на всех изображениях."""
