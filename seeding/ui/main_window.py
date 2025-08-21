@@ -599,11 +599,27 @@ class ImageEditor(QMainWindow):
         self.worker.start()
 
     def find_all_seedlings(self) -> None:
-        """Последовательно запускает поиск сеянцев на всех изображениях."""
+        """Запускает поиск сеянцев на всех изображениях без падений.
+
+        Ранее метод вызывал :meth:`find_seedlings`, который стартовал
+        асинхронный `QThread` для каждой страницы. При последовательном
+        обходе изображений это приводило к одновременному запуску множества
+        потоков и приложению было сложно корректно обновлять прогресс‑бар,
+        что могло завершаться крашем. Теперь детекция выполняется
+        синхронно в основном потоке: результаты каждой страницы
+        обрабатываются сразу после получения, а индикатор прогресса
+        обновляется последовательно.
+        """
+
         self._update_action_states()
         if not self.image_storage.images:
             logger.warning("find_all_seedlings: Нет изображений")
             return
+
+        if self.image_storage.class_object_image is None:
+            self.image_storage.class_object_image = [
+                [] for _ in range(len(self.image_storage.images))
+            ]
 
         total = len(self.image_storage.images)
         self.progress_bar.setVisible(True)
@@ -613,8 +629,10 @@ class ImageEditor(QMainWindow):
         for idx, image in enumerate(self.image_storage.images):
             self._active_image_index = idx
             self.progress_bar.setValue(idx)
-            self.find_seedlings()
-            self.progress_bar.setRange(0, total)
+
+            results = self.model(image)
+            self._on_detection_result(idx, results)
+
             self.progress_bar.setValue(idx + 1)
 
         self.progress_bar.setVisible(False)
