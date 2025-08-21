@@ -13,9 +13,9 @@ from PyQt5.QtWidgets import (
     QFileDialog,
     QGroupBox,
     QLabel,
-    QHBoxLayout,
     QMainWindow,
     QScrollArea,
+    QSplitter,
     QToolBar,
     QVBoxLayout,
     QWidget,
@@ -162,20 +162,20 @@ class ImageEditor(QMainWindow):
         self.scroll_area = DraggableScrollArea()
         self.scroll_area.setWidgetResizable(True)
 
-        self.central_widget = QWidget()
-        self.setCentralWidget(self.central_widget)
-        self.main_layout = QHBoxLayout(self.central_widget)
-
         self.image_label = QLabel("Тут будет изображение")
         self.image_label.setAlignment(Qt.AlignCenter)
         self.image_label.setStyleSheet("border: 1px dashed gray;")
 
         self.scroll_area.setWidget(self.image_label)
-        self.main_layout.addWidget(self.scroll_area, 2)
+
+        self.splitter = QSplitter(Qt.Horizontal)
+        self.splitter.addWidget(self.scroll_area)
+        self.setCentralWidget(self.splitter)
 
     def create_right_panel(self):
         """Создаёт правую панель с деревом слоёв."""
         self.right_panel = QGroupBox("Слои")
+        self.right_panel.setMinimumWidth(200)
         layout = QVBoxLayout()
         self.tree_widget = LayerTreeWidget()
 
@@ -187,7 +187,8 @@ class ImageEditor(QMainWindow):
         self.tree_widget.itemClicked.connect(self.on_tree_item_clicked)
 
         self.right_panel.setLayout(layout)
-        self.main_layout.addWidget(self.right_panel, 1)
+        self.splitter.addWidget(self.right_panel)
+        self.splitter.setCollapsible(1, False)
 
     def on_tree_item_clicked(self, item, column):
         """Обрабатывает выбор элемента в дереве слоёв."""
