@@ -7,7 +7,7 @@ import cv2
 import fitz
 import numpy as np
 from PyQt5.QtCore import QPoint, Qt, QThread, pyqtSignal
-from PyQt5.QtGui import QIcon, QImage, QPixmap
+from PyQt5.QtGui import QImage, QPixmap
 
 from PyQt5.QtWidgets import (
     QAction,
@@ -422,7 +422,6 @@ class ImageEditor(QMainWindow):
 
     def rotate_image(self) -> None:
         """Поворачивает выбранное изображение или crop на 90 градусов."""
-        self._update_action_states()
         selected_item = self.tree_widget.currentItem()
         if selected_item is None:
             logger.warning("rotate_image: Нет выбранного элемента в дереве")
@@ -465,6 +464,8 @@ class ImageEditor(QMainWindow):
         else:
             logger.warning("rotate_image: Неизвестный тип данных")
             return
+
+        self._update_action_states()
 
     def create_mask(self) -> None:
         """Создание маски (функциональность пока не реализована)."""
@@ -567,7 +568,6 @@ class ImageEditor(QMainWindow):
         слоёв. Если ширина вырезанного участка больше его высоты, изображение
         поворачивается на 90 градусов для вертикальной ориентации.
         """
-        self._update_action_states()
         if self.image_storage.class_object_image is None:
             self.image_storage.class_object_image = [
                 [] for _ in range(len(self.image_storage.images))
@@ -596,10 +596,10 @@ class ImageEditor(QMainWindow):
         self.worker.result_ready.connect(self._on_detection_result)
         self.worker.finished.connect(self._on_detection_finished)
         self.worker.start()
+        self._update_action_states()
 
     def find_all_seedlings(self) -> None:
         """Последовательно запускает поиск сеянцев на всех изображениях."""
-        self._update_action_states()
         if not self.image_storage.images:
             logger.warning("find_all_seedlings: Нет изображений")
             return
@@ -609,6 +609,7 @@ class ImageEditor(QMainWindow):
         self.progress_bar.setRange(0, len(self._find_all_queue))
         self.progress_bar.setValue(0)
         self._run_next_detection()
+        self._update_action_states()
 
     def _run_next_detection(self) -> None:
         """Запускает детекцию для следующего изображения из очереди."""
@@ -669,12 +670,11 @@ class ImageEditor(QMainWindow):
 
     def classify(self) -> None:
         """Классифицирует найденные объекты (заглушка)."""
-        self._update_action_states()
         logger.info("Классификация — пока не реализовано")
+        self._update_action_states()
 
     def create_report(self) -> None:
         """Создаёт PDF-отчёт по текущим результатам детекции."""
-        self._update_action_states()
         if not self.image_storage.images:
             logger.warning("create_report: Нет данных для отчёта")
             return
@@ -688,3 +688,4 @@ class ImageEditor(QMainWindow):
             logger.info("Отчёт сохранён: %s", output_path)
         except Exception as e:
             logger.error("Ошибка при создании отчёта: %s", e)
+        self._update_action_states()
