@@ -1,13 +1,34 @@
-# Byte-compiled / optimized / DLL files
+# IDE / PyCharm
+.idea/
+*.iml
+
+# Python
 __pycache__/
-*.py[cod]
+*.pyc
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+.venv/
+.env
 
-# Virtual environment
-venv/
-
-# Logs and reports
+# Logs
 *.log
-*.report
 
-# macOS
-.DS_Store
+# Jupyter
+.ipynb_checkpoints/
+
+# Training artifacts
+runs/
+results/**/weights/
+results/**/*.jpg
+results/**/*.png
+results/**/*.csv
+seg_out/
+
+# Model weights
+*.pt
+
+# Datasets / cache
+dataset/**/*.zip
+dataset/**/labels.cache
