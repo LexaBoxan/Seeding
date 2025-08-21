@@ -51,6 +51,7 @@ checkpoints/
 output/
 outputs/
 logs/
+qt-material/
 
 # Big model files
 *.pt
