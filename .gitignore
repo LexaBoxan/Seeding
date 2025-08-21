@@ -26,6 +26,8 @@ results/**/*.png
 results/**/*.csv
 seg_out/
 
+qt-material/
+
 # Model weights
 *.pt
 
