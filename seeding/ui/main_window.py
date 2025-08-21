@@ -160,6 +160,7 @@ class ImageEditor(QMainWindow):
         toolbar.setOrientation(Qt.Vertical)
         toolbar.setMovable(False)
         toolbar.setFixedWidth(150)
+
         toolbar.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
         self.addToolBar(Qt.LeftToolBarArea, toolbar)
 
