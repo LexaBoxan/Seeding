@@ -15,6 +15,7 @@ from PyQt5.QtWidgets import (
     QLabel,
     QHBoxLayout,
     QMainWindow,
+    QProgressBar,
     QScrollArea,
     QToolBar,
     QVBoxLayout,
@@ -93,6 +94,12 @@ class ImageEditor(QMainWindow):
         self.model = YOLO(weights_path)
 
         self.init_ui()
+
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setRange(0, 1)
+        self.progress_bar.setValue(0)
+        self.progress_bar.setVisible(False)
+        self.statusBar().addPermanentWidget(self.progress_bar)
 
     def init_ui(self):
         """Создаёт все основные виджеты интерфейса."""
@@ -247,6 +254,9 @@ class ImageEditor(QMainWindow):
         """Загружает все страницы PDF как изображения."""
         try:
             doc = fitz.open(pdf_path)
+            self.progress_bar.setVisible(True)
+            self.progress_bar.setRange(0, doc.page_count)
+            self.progress_bar.setValue(0)
             for page_num in range(doc.page_count):
                 page = doc.load_page(page_num)
                 mat = fitz.Matrix(4, 4)  # 2x масштаб
@@ -265,12 +275,17 @@ class ImageEditor(QMainWindow):
                 self.tree_widget.add_root_item(
                     f"Стр. {page_num + 1}", "Страница PDF", page_num, "pdf", img
                 )
+                self.progress_bar.setValue(page_num + 1)
             doc.close()
 
             # Инициализация class_object_image для всех страниц
             self.image_storage.class_object_image = [
                 [] for _ in range(len(self.image_storage.images))
             ]
+
+            self.progress_bar.setVisible(False)
+            self.progress_bar.setRange(0, 1)
+            self.progress_bar.setValue(0)
 
         except Exception as e:
             logger.error("Ошибка при загрузке PDF: %s", e)
@@ -405,9 +420,22 @@ class ImageEditor(QMainWindow):
             logger.warning("find_seedlings: Нет изображений для обработки")
             return
 
+        prev_state = (
+            self.progress_bar.minimum(),
+            self.progress_bar.maximum(),
+            self.progress_bar.value(),
+            self.progress_bar.isVisible(),
+        )
+        self.progress_bar.setRange(0, 0)
+        self.progress_bar.setVisible(True)
+
         image = self.image_storage.images[current_index]
         if image is None:
             logger.warning("find_seedlings: Текущее изображение пустое")
+            if not prev_state[3]:
+                self.progress_bar.setVisible(False)
+            self.progress_bar.setRange(prev_state[0], prev_state[1])
+            self.progress_bar.setValue(prev_state[2])
             return
 
         try:
@@ -415,6 +443,10 @@ class ImageEditor(QMainWindow):
             logger.debug("find_seedlings: модель вернула %s боксов", len(results[0].boxes))
         except Exception as e:
             logger.error("Ошибка при вызове модели: %s", e)
+            self.progress_bar.setRange(prev_state[0], prev_state[1])
+            self.progress_bar.setValue(prev_state[2])
+            if not prev_state[3]:
+                self.progress_bar.setVisible(False)
             return
 
         try:
@@ -491,12 +523,20 @@ class ImageEditor(QMainWindow):
                 )
 
             logger.info("find_seedlings: завершено")
-
         except Exception as e:
             logger.error(
                 "Ошибка во время NMS или обработки результатов: %s", e
             )
+            if not prev_state[3]:
+                self.progress_bar.setVisible(False)
+            self.progress_bar.setRange(prev_state[0], prev_state[1])
+            self.progress_bar.setValue(prev_state[2])
             return
+
+        self.progress_bar.setRange(prev_state[0], prev_state[1])
+        self.progress_bar.setValue(prev_state[2])
+        if not prev_state[3]:
+            self.progress_bar.setVisible(False)
 
     def find_all_seedlings(self) -> None:
         """Последовательно запускает поиск сеянцев на всех изображениях."""
@@ -504,11 +544,21 @@ class ImageEditor(QMainWindow):
             logger.warning("find_all_seedlings: Нет изображений")
             return
 
+        total = len(self.image_storage.images)
+        self.progress_bar.setVisible(True)
+        self.progress_bar.setRange(0, total)
+        self.progress_bar.setValue(0)
+
         for idx, image in enumerate(self.image_storage.images):
-            self._active_image_index = (
-                idx  # чтобы всё работало так же, как для find_seedlings
-            )
+            self._active_image_index = idx
+            self.progress_bar.setValue(idx)
             self.find_seedlings()
+            self.progress_bar.setRange(0, total)
+            self.progress_bar.setValue(idx + 1)
+
+        self.progress_bar.setVisible(False)
+        self.progress_bar.setRange(0, 1)
+        self.progress_bar.setValue(0)
         logger.info("find_all_seedlings: завершено")
 
     def display_image_with_boxes(self, idx: int) -> None:
