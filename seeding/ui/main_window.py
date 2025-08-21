@@ -22,6 +22,7 @@ from PyQt5.QtWidgets import (
     QProgressBar,
     QVBoxLayout,
     QWidget,
+    QStyle,
 )
 from ultralytics import YOLO
 
@@ -149,45 +150,65 @@ class ImageEditor(QMainWindow):
         toolbar.setFixedWidth(150)
         self.addToolBar(Qt.LeftToolBarArea, toolbar)
 
-        self.mask_action = QAction(QIcon(), "Создать маску", self)
+        self.mask_action = QAction(
+            self.style().standardIcon(QStyle.SP_FileDialogNewFolder), "Создать маску", self
+        )
         self.mask_action.triggered.connect(self.create_mask)
         toolbar.addAction(self.mask_action)
 
-        self.seedlings_action = QAction(QIcon(), "Найти сеянцы", self)
+        self.seedlings_action = QAction(
+            self.style().standardIcon(QStyle.SP_DialogYesButton), "Найти сеянцы", self
+        )
         self.seedlings_action.triggered.connect(self.find_seedlings)
         toolbar.addAction(self.seedlings_action)
 
-        self.find_all_seedlings_action = QAction(QIcon(), "Найти все сеянцы", self)
+        self.find_all_seedlings_action = QAction(
+            self.style().standardIcon(QStyle.SP_BrowserReload), "Найти все сеянцы", self
+        )
         self.find_all_seedlings_action.triggered.connect(self.find_all_seedlings)
         toolbar.addAction(self.find_all_seedlings_action)
 
-        self.classify_action = QAction(QIcon(), "Классификация", self)
+        self.classify_action = QAction(
+            self.style().standardIcon(QStyle.SP_ComputerIcon), "Классификация", self
+        )
         self.classify_action.triggered.connect(self.classify)
         toolbar.addAction(self.classify_action)
 
-        self.rotate_action = QAction(QIcon(), "Повернуть на 90°", self)
+        self.rotate_action = QAction(
+            self.style().standardIcon(QStyle.SP_BrowserReload), "Повернуть на 90°", self
+        )
         self.rotate_action.triggered.connect(self.rotate_image)
         toolbar.addAction(self.rotate_action)
 
         toolbar.addSeparator()
 
-        self.report_action = QAction(QIcon(), "Создать отчет", self)
+        self.report_action = QAction(
+            self.style().standardIcon(QStyle.SP_FileDialogDetailedView), "Создать отчет", self
+        )
         self.report_action.triggered.connect(self.create_report)
         toolbar.addAction(self.report_action)
 
         toolbar.addSeparator()
 
-        self.zoom_in_action = QAction("Приблизить", self)
+        self.zoom_in_action = QAction(
+            self.style().standardIcon(QStyle.SP_ArrowUp), "Приблизить", self
+        )
         self.zoom_in_action.triggered.connect(self.zoom_in)
         toolbar.addAction(self.zoom_in_action)
 
-        self.zoom_out_action = QAction("Отдалить", self)
+        self.zoom_out_action = QAction(
+            self.style().standardIcon(QStyle.SP_ArrowDown), "Отдалить", self
+        )
         self.zoom_out_action.triggered.connect(self.zoom_out)
         toolbar.addAction(self.zoom_out_action)
 
-        self.fit_action = QAction("Вписать", self)
+        self.fit_action = QAction(
+            self.style().standardIcon(QStyle.SP_ComputerIcon), "Вписать", self
+        )
         self.fit_action.triggered.connect(self.fit_to_window)
         toolbar.addAction(self.fit_action)
+
+        self.update_actions_state()
 
     def create_central_widget(self):
         """Создаёт центральную область отображения изображений."""
@@ -222,6 +243,15 @@ class ImageEditor(QMainWindow):
         self.splitter.addWidget(self.right_panel)
         self.splitter.setCollapsible(1, False)
 
+    def update_actions_state(self) -> None:
+        """Включает или отключает действия в зависимости от наличия изображения."""
+        has_image = bool(self.image_storage.images)
+        self.rotate_action.setEnabled(has_image)
+        self.seedlings_action.setEnabled(has_image)
+        self.find_all_seedlings_action.setEnabled(has_image)
+        self.classify_action.setEnabled(has_image)
+        self.report_action.setEnabled(has_image)
+
     def on_tree_item_clicked(self, item, column):
         """Обрабатывает выбор элемента в дереве слоёв."""
         item_data = item.data(0, Qt.UserRole)
@@ -244,6 +274,7 @@ class ImageEditor(QMainWindow):
     def open_image(self) -> None:
         """Открывает диалог выбора файла и загружает изображение или PDF."""
         self.image_storage = OriginalImage()
+        self.update_actions_state()
         file_name, _ = QFileDialog.getOpenFileName(
             self,
             "Открыть изображение или PDF",
@@ -271,6 +302,7 @@ class ImageEditor(QMainWindow):
             self.image_storage.class_object_image = [
                 [] for _ in range(len(self.image_storage.images))
             ]
+        self.update_actions_state()
 
     def load_image(self, file_name: str) -> np.ndarray | None:
         """Загружает изображение с диска."""
@@ -317,6 +349,8 @@ class ImageEditor(QMainWindow):
             self.progress_bar.setVisible(False)
             self.progress_bar.setRange(0, 1)
             self.progress_bar.setValue(0)
+
+            self.update_actions_state()
 
         except Exception as e:
             logger.error("Ошибка при загрузке PDF: %s", e)
@@ -383,6 +417,9 @@ class ImageEditor(QMainWindow):
 
     def rotate_image(self) -> None:
         """Поворачивает выбранное изображение или crop на 90 градусов."""
+        self.update_actions_state()
+        if not self.rotate_action.isEnabled():
+            return
         selected_item = self.tree_widget.currentItem()
         if selected_item is None:
             logger.warning("rotate_image: Нет выбранного элемента в дереве")
@@ -527,6 +564,9 @@ class ImageEditor(QMainWindow):
         слоёв. Если ширина вырезанного участка больше его высоты, изображение
         поворачивается на 90 градусов для вертикальной ориентации.
         """
+        self.update_actions_state()
+        if not self.seedlings_action.isEnabled():
+            return
         if self.image_storage.class_object_image is None:
             self.image_storage.class_object_image = [
                 [] for _ in range(len(self.image_storage.images))
@@ -558,6 +598,9 @@ class ImageEditor(QMainWindow):
 
     def find_all_seedlings(self) -> None:
         """Последовательно запускает поиск сеянцев на всех изображениях."""
+        self.update_actions_state()
+        if not self.find_all_seedlings_action.isEnabled():
+            return
         if not self.image_storage.images:
             logger.warning("find_all_seedlings: Нет изображений")
             return
@@ -607,10 +650,16 @@ class ImageEditor(QMainWindow):
 
     def classify(self) -> None:
         """Классифицирует найденные объекты (заглушка)."""
+        self.update_actions_state()
+        if not self.classify_action.isEnabled():
+            return
         logger.info("Классификация — пока не реализовано")
 
     def create_report(self) -> None:
         """Создаёт PDF-отчёт по текущим результатам детекции."""
+        self.update_actions_state()
+        if not self.report_action.isEnabled():
+            return
         if not self.image_storage.images:
             logger.warning("create_report: Нет данных для отчёта")
             return
