@@ -6,52 +6,43 @@
   <component name="ChangeListManager">
     <list default="true" id="300734ec-daa0-4c66-b3b7-98db00b5250b" name="Changes" comment="Add files via upload">
       <changelist_data name="LexaBoxan" email="80101881+lexaboxan@users.noreply.github.com" automatic="false" />
-      <change afterPath="$PROJECT_DIR$/PDF.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/_____17_07_2025__15_26__Changes_1.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/_____18_07_2025__14_16__Changes_.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/___rebasing__Changes_2.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Незафиксированные_изменения_до_rebasing_[Changes]2/F1_curve.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Незафиксированные_изменения_до_rebasing_[Changes]2/PR_curve.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Незафиксированные_изменения_до_rebasing_[Changes]2/P_curve.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Незафиксированные_изменения_до_rebasing_[Changes]2/R_curve.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Незафиксированные_изменения_до_rebasing_[Changes]2/confusion_matrix.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Незафиксированные_изменения_до_rebasing_[Changes]2/confusion_matrix_normalized.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Незафиксированные_изменения_до_rebasing_[Changes]2/labels.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Незафиксированные_изменения_до_rebasing_[Changes]2/labels_correlogram.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Незафиксированные_изменения_до_rebasing_[Changes]2/results.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Незафиксированные_изменения_до_rebasing_[Changes]2/shelved.patch" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Незафиксированные_изменения_до_rebasing_[Changes]2/train_batch0.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Незафиксированные_изменения_до_rebasing_[Changes]2/train_batch1.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Незафиксированные_изменения_до_rebasing_[Changes]2/train_batch2.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Незафиксированные_изменения_до_rebasing_[Changes]2/val_batch0_labels.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Незафиксированные_изменения_до_rebasing_[Changes]2/val_batch0_pred.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Несохраненные_изменения_перед_Извлечение_в_17_07_2025,_15_26_[Changes]1/shelved.patch" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Несохраненные_изменения_перед_Обновление_в_18_07_2025,_14_16_[Changes]/F1_curve.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Несохраненные_изменения_перед_Обновление_в_18_07_2025,_14_16_[Changes]/PR_curve.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Несохраненные_изменения_перед_Обновление_в_18_07_2025,_14_16_[Changes]/P_curve.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Несохраненные_изменения_перед_Обновление_в_18_07_2025,_14_16_[Changes]/R_curve.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Несохраненные_изменения_перед_Обновление_в_18_07_2025,_14_16_[Changes]/confusion_matrix.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Несохраненные_изменения_перед_Обновление_в_18_07_2025,_14_16_[Changes]/confusion_matrix_normalized.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Несохраненные_изменения_перед_Обновление_в_18_07_2025,_14_16_[Changes]/labels.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Несохраненные_изменения_перед_Обновление_в_18_07_2025,_14_16_[Changes]/labels_correlogram.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Несохраненные_изменения_перед_Обновление_в_18_07_2025,_14_16_[Changes]/results.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Несохраненные_изменения_перед_Обновление_в_18_07_2025,_14_16_[Changes]/shelved.patch" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Несохраненные_изменения_перед_Обновление_в_18_07_2025,_14_16_[Changes]/train_batch0.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Несохраненные_изменения_перед_Обновление_в_18_07_2025,_14_16_[Changes]/train_batch1.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Несохраненные_изменения_перед_Обновление_в_18_07_2025,_14_16_[Changes]/train_batch2.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Несохраненные_изменения_перед_Обновление_в_18_07_2025,_14_16_[Changes]/val_batch0_labels.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Несохраненные_изменения_перед_Обновление_в_18_07_2025,_14_16_[Changes]/val_batch0_pred.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TZ.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1/Pak1_page-0001.jpg" beforeDir="false" afterPath="$PROJECT_DIR$/Photo/Pak1/Pak1_page-0001.jpg" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak2/Pak2_page-0001.jpg" beforeDir="false" afterPath="$PROJECT_DIR$/Photo/Pak2/Pak2_page-0001.jpg" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/TestProg/TestSegML.py" beforeDir="false" afterPath="$PROJECT_DIR$/TestProg/TestSegML.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/TestProg/TrainYOLOseg.py" beforeDir="false" afterPath="$PROJECT_DIR$/TestProg/TrainYOLOseg.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/qt-material/examples/full_features/my_theme.xml" beforeDir="false" afterPath="$PROJECT_DIR$/qt-material/examples/full_features/my_theme.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/seeding/ui/main_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/seeding/ui/main_window.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/seg_out/masks/Pak1_page-0001_mask.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/seg_out/masks/Pak1_page-0002_mask.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/seg_out/masks/Pak1_page-0003_mask.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/seg_out/masks/Pak1_page-0004_mask.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/seg_out/masks/Pak1_page-0005_mask.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/seg_out/masks/Pak1_page-0006_mask.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/seg_out/masks/Pak1_page-0007_mask.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/seg_out/masks/Pak1_page-0008_mask.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/seg_out/masks/Pak1_page-0009_mask.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/seg_out/overlay/Pak1_page-0001_overlay.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/seg_out/overlay/Pak1_page-0002_overlay.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/seg_out/overlay/Pak1_page-0003_overlay.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/seg_out/overlay/Pak1_page-0004_overlay.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/seg_out/overlay/Pak1_page-0005_overlay.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/seg_out/overlay/Pak1_page-0006_overlay.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/seg_out/overlay/Pak1_page-0007_overlay.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/seg_out/overlay/Pak1_page-0008_overlay.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/seg_out/overlay/Pak1_page-0009_overlay.png" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
   </component>
   <component name="Git.Settings">
     <excluded-from-favorite>
@@ -80,7 +71,7 @@
     </option>
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
-        <entry key="$PROJECT_DIR$" value="TestV1.4" />
+        <entry key="$PROJECT_DIR$" value="TestV1.5" />
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -110,14 +101,18 @@
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
     "ASKED_MARK_IGNORED_FILES_AS_EXCLUDED": "true",
+    "Python.SegMl.executor": "Run",
+    "Python.TestSegML.executor": "Run",
+    "Python.TrainYOLOseg.executor": "Run",
     "Python.config.executor": "Run",
+    "Python.image_processor.executor": "Run",
     "Python.main.executor": "Run",
     "Python.main_window.executor": "Run",
     "Python.ui_main.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "TestV1.5",
-    "last_opened_file_path": "E:/_JOB_/_Python/SeedingV1.1",
+    "git-widget-placeholder": "TestV1.6",
+    "last_opened_file_path": "E:/_JOB_/_Python/Seeding",
     "node.js.detected.package.eslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
     "node.js.selected.package.tslint": "(autodetect)",
@@ -135,8 +130,15 @@
   </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="E:\_JOB_\_Python\Seeding" />
+      <recent name="E:\_JOB_\_Python\Seeding\Photo" />
+      <recent name="E:\_JOB_\_Python\Seeding\models" />
       <recent name="E:\_JOB_\_Python" />
       <recent name="E:\_JOB_\_Python\Seeding\results" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="E:\_JOB_\_Python\Seeding" />
+      <recent name="E:\_JOB_\_Python\Seeding\TestProg" />
     </key>
   </component>
   <component name="SharedIndexes">
@@ -167,6 +169,7 @@
       <workItem from="1755429724756" duration="42000" />
       <workItem from="1755429791771" duration="184000" />
       <workItem from="1755429988831" duration="1007000" />
+      <workItem from="1755431110931" duration="32008000" />
     </task>
     <servers />
   </component>
@@ -201,9 +204,13 @@
     <option name="LAST_COMMIT_MESSAGE" value="Add files via upload" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
+    <SUITE FILE_PATH="coverage/Seeding$image_processor.coverage" NAME="image_processor Coverage Results" MODIFIED="1755499384227" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/seeding/processing" />
+    <SUITE FILE_PATH="coverage/Seeding$TrainYOLOseg.coverage" NAME="TrainYOLOseg Coverage Results" MODIFIED="1755509542775" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/TestProg" />
     <SUITE FILE_PATH="coverage/Seeding$main_window.coverage" NAME="main_window Результаты покрытия" MODIFIED="1752831923040" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/seeding/ui" />
+    <SUITE FILE_PATH="coverage/Seeding$TestSegML.coverage" NAME="TestSegML Coverage Results" MODIFIED="1755514294044" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/TestProg" />
+    <SUITE FILE_PATH="coverage/Seeding$SegMl.coverage" NAME="SegMl Coverage Results" MODIFIED="1755493660648" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/TestProg" />
     <SUITE FILE_PATH="coverage/Seeding$ui_main.coverage" NAME="ui_main Результаты покрытия" MODIFIED="1752740065108" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/seeding" />
-    <SUITE FILE_PATH="coverage/Seeding$main.coverage" NAME="main Результаты покрытия" MODIFIED="1752838476875" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/seeding" />
+    <SUITE FILE_PATH="coverage/Seeding$main.coverage" NAME="main Coverage Results" MODIFIED="1755672048863" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/seeding" />
     <SUITE FILE_PATH="coverage/Seeding$config.coverage" NAME="config Результаты покрытия" MODIFIED="1752835721457" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/seeding" />
   </component>
 </project>

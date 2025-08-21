@@ -12,7 +12,7 @@ def load_images_from_folder(folder):
     return image_paths
 
 # 1. Загружаем модель сегментации. В документации указано, что достаточно передать файл .pt:contentReference[oaicite:1]{index=1}.
-model = YOLO(r"/results/seeding-seg3/weights/best.pt")
+model = YOLO(r"E:\_JOB_\_Python\Seeding\results\seeding-seg12\weights\best.pt")
 
 
 # 2. Путь к папке с изображениями (замените на свою папку)
