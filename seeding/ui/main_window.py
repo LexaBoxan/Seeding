@@ -6,7 +6,7 @@ import os
 import cv2
 import fitz
 import numpy as np
-from PyQt5.QtCore import QPoint, Qt
+from PyQt5.QtCore import QPoint, Qt, QThread, pyqtSignal
 from PyQt5.QtGui import QIcon, QImage, QPixmap
 from PyQt5.QtWidgets import (
     QAction,
@@ -15,6 +15,7 @@ from PyQt5.QtWidgets import (
     QLabel,
     QHBoxLayout,
     QMainWindow,
+    QProgressBar,
     QScrollArea,
     QToolBar,
     QVBoxLayout,
@@ -72,6 +73,72 @@ class DraggableScrollArea(QScrollArea):
             super().mouseReleaseEvent(event)
 
 
+class DetectionWorker(QThread):
+    """Worker thread для выполнения инференса модели."""
+
+    result_ready = pyqtSignal(int, list)
+    error = pyqtSignal(str)
+
+    def __init__(self, model, image, index):
+        super().__init__()
+        self.model = model
+        self.image = image
+        self.index = index
+
+    def run(self):
+        try:
+            results = self.model(self.image)
+            boxes = []
+            scores = []
+            class_boxes_data = []
+            for box in results[0].boxes:
+                class_id = int(box.cls)
+                class_name = results[0].names[class_id]
+                if class_name == "Seeding":
+                    score = float(box.conf)
+                    x_center, y_center, width, height = box.xywh[0].cpu().numpy()
+                    x1 = int(x_center - width / 2)
+                    y1 = int(y_center - height / 2)
+                    x2 = int(x_center + width / 2)
+                    y2 = int(y_center + height / 2)
+
+                    h, w = self.image.shape[:2]
+                    x1, x2 = max(0, x1), min(x2, w)
+                    y1, y2 = max(0, y1), min(y2, h)
+                    if x2 <= x1 or y2 <= y1:
+                        continue
+
+                    boxes.append([x1, y1, x2, y2])
+                    scores.append(score)
+                    class_boxes_data.append(
+                        {
+                            "class_name": class_name,
+                            "score": score,
+                            "coords": (x1, y1, x2, y2),
+                        }
+                    )
+
+            indices = simple_nms(boxes, scores, iou_threshold=0.4)
+            objects = []
+            for i in indices:
+                data = class_boxes_data[i]
+                x1, y1, x2, y2 = data["coords"]
+                crop = self.image[y1:y2, x1:x2].copy()
+                if crop.shape[1] > crop.shape[0]:
+                    crop = np.rot90(crop, k=ROTATE_K)
+                obj = ObjectImage(
+                    class_name=data["class_name"],
+                    confidence=data["score"],
+                    image=[crop],
+                    bbox=(x1, y1, x2, y2),
+                )
+                objects.append(obj)
+
+            self.result_ready.emit(self.index, objects)
+        except Exception as e:
+            self.error.emit(str(e))
+
+
 class ImageEditor(QMainWindow):
     """
     Главное окно приложения для работы с изображениями и PDF.
@@ -100,6 +167,7 @@ class ImageEditor(QMainWindow):
         self.create_toolbars()
         self.create_central_widget()
         self.create_right_panel()
+        self.create_progress_bar()
 
     def create_menu(self):
         """Создаёт меню приложения с пунктом открытия файла."""
@@ -188,6 +256,21 @@ class ImageEditor(QMainWindow):
 
         self.right_panel.setLayout(layout)
         self.main_layout.addWidget(self.right_panel, 1)
+
+    def create_progress_bar(self):
+        """Создаёт прогресс-бар в строке состояния."""
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setRange(0, 0)
+        self.progress_bar.setVisible(False)
+        self.statusBar().addPermanentWidget(self.progress_bar)
+
+    def show_progress(self):
+        """Отображает прогресс-бар."""
+        self.progress_bar.setVisible(True)
+
+    def hide_progress(self):
+        """Скрывает прогресс-бар."""
+        self.progress_bar.setVisible(False)
 
     def on_tree_item_clicked(self, item, column):
         """Обрабатывает выбор элемента в дереве слоёв."""
@@ -385,21 +468,13 @@ class ImageEditor(QMainWindow):
         logger.info("Создание маски — пока не реализовано")
 
     def find_seedlings(self) -> None:
-        """Запускает модель YOLOv8 для поиска сеянцев на текущем изображении.
-
-        Результаты проходят через простую процедуру NMS. Каждая найденная
-        область добавляется в хранилище `image_storage` и отображается в дереве
-        слоёв. Если ширина вырезанного участка больше его высоты, изображение
-        поворачивается на 90 градусов для вертикальной ориентации.
-        """
+        """Запускает worker для поиска сеянцев на текущем изображении."""
         if self.image_storage.class_object_image is None:
             self.image_storage.class_object_image = [
                 [] for _ in range(len(self.image_storage.images))
             ]
 
-        logger.info("find_seedlings: start")
         current_index = getattr(self, "_active_image_index", 0)
-        logger.debug("find_seedlings: current_index = %s", current_index)
 
         if not self.image_storage.images:
             logger.warning("find_seedlings: Нет изображений для обработки")
@@ -410,93 +485,34 @@ class ImageEditor(QMainWindow):
             logger.warning("find_seedlings: Текущее изображение пустое")
             return
 
-        try:
-            results = self.model(image)
-            logger.debug("find_seedlings: модель вернула %s боксов", len(results[0].boxes))
-        except Exception as e:
-            logger.error("Ошибка при вызове модели: %s", e)
-            return
+        logger.info("find_seedlings: start")
+        self.worker = DetectionWorker(self.model, image, current_index)
+        self.worker.started.connect(self.show_progress)
+        self.worker.result_ready.connect(self.on_detection_result)
+        self.worker.finished.connect(self.hide_progress)
+        self.worker.error.connect(lambda msg: logger.error("Ошибка в worker: %s", msg))
+        self.worker.start()
 
-        try:
-            # Здесь дальше по коду — NMS и обработка
-            # Пример простой NMS, как я писал ранее, чтобы избежать cv2.dnn.NMSBoxes
-            boxes = []
-            scores = []
-            class_boxes_data = []
-            for box in results[0].boxes:
-                class_id = int(box.cls)
-                class_name = results[0].names[class_id]
-                if class_name == "Seeding":
-                    score = float(box.conf)
-                    x_center, y_center, width, height = box.xywh[0].cpu().numpy()
-                    x1 = int(x_center - width / 2)
-                    y1 = int(y_center - height / 2)
-                    x2 = int(x_center + width / 2)
-                    y2 = int(y_center + height / 2)
-
-                    h, w = image.shape[:2]
-                    x1, x2 = max(0, x1), min(x2, w)
-                    y1, y2 = max(0, y1), min(y2, h)
-                    if x2 <= x1 or y2 <= y1:
-                        logger.debug(
-                            "find_seedlings: пропускаем некорректный bbox %s",
-                            (x1, y1, x2, y2),
-                        )
-                        continue
-
-                    boxes.append([x1, y1, x2, y2])
-                    scores.append(score)
-                    class_boxes_data.append(
-                        {
-                            "class_name": class_name,
-                            "score": score,
-                            "coords": (x1, y1, x2, y2),
-                        }
-                    )
-
-            logger.info(
-                "find_seedlings: найдено %s боксов, запускаем NMS", len(boxes)
-            )
-            indices = simple_nms(boxes, scores, iou_threshold=0.4)
-            logger.info(
-                "find_seedlings: после NMS осталось %s боксов", len(indices)
-            )
-
-            # Добавляем в dataclass и дерево
-            self.image_storage.class_object_image[current_index] = []
-            parent_item = self.tree_widget.topLevelItem(current_index)
-            for i_out, i in enumerate(indices):
-                data = class_boxes_data[i]
-                x1, y1, x2, y2 = data["coords"]
-                crop = image[y1:y2, x1:x2].copy()
-                # Проверяем ориентацию crop'a. Если ширина больше высоты,
-                # поворачиваем изображение на 90 градусов, чтобы оно стало вертикальным
-                if crop.shape[1] > crop.shape[0]:
-                    crop = np.rot90(crop, k=ROTATE_K)
-                obj = ObjectImage(
-                    class_name=data["class_name"],
-                    confidence=data["score"],
-                    image=[crop],
-                    bbox=(x1, y1, x2, y2),
-                )
-                self.image_storage.class_object_image[current_index].append(obj)
+    def on_detection_result(self, index: int, objects: list[ObjectImage]) -> None:
+        """Обновляет дерево и изображения по результатам worker."""
+        self.image_storage.class_object_image[index] = objects
+        parent_item = self.tree_widget.topLevelItem(index)
+        if parent_item:
+            parent_item.takeChildren()
+            for i_out, obj in enumerate(objects):
+                crop = obj.image[0]
                 self.tree_widget.add_child_item(
                     parent_item,
-                    f"Seeding{i_out + 1}",  # вместо "Сеянец {i_out + 1}"
-                    f"Уверенность: {data['score']:.2f}",
-                    current_index,
+                    f"Seeding{i_out + 1}",
+                    f"Уверенность: {obj.confidence:.2f}",
+                    index,
                     i_out,
                     "seeding",
                     crop,
                 )
 
-            logger.info("find_seedlings: завершено")
-
-        except Exception as e:
-            logger.error(
-                "Ошибка во время NMS или обработки результатов: %s", e
-            )
-            return
+        self.display_image_with_boxes(index)
+        logger.info("find_seedlings: завершено")
 
     def find_all_seedlings(self) -> None:
         """Последовательно запускает поиск сеянцев на всех изображениях."""
