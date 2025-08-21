@@ -3,5 +3,8 @@
   <component name="Black">
     <option name="sdkName" value="C:\Users\alesh\miniconda3" />
   </component>
+  <component name="ExtraIDETweaksSettingsProject">
+    <option name="enableOpenEditorsShowRecentFiles" value="false" />
+  </component>
   <component name="ProjectRootManager" version="2" project-jdk-name="C:\Users\alesh\miniconda3" project-jdk-type="Python SDK" />
 </project>

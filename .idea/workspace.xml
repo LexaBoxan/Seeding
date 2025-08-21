@@ -6,31 +6,7 @@
   <component name="ChangeListManager">
     <list default="true" id="300734ec-daa0-4c66-b3b7-98db00b5250b" name="Changes" comment="Add files via upload">
       <changelist_data name="LexaBoxan" email="80101881+lexaboxan@users.noreply.github.com" automatic="false" />
-      <change afterPath="$PROJECT_DIR$/TZ.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Photo/Pak1/Pak1_page-0001.jpg" beforeDir="false" afterPath="$PROJECT_DIR$/Photo/Pak1/Pak1_page-0001.jpg" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Photo/Pak2/Pak2_page-0001.jpg" beforeDir="false" afterPath="$PROJECT_DIR$/Photo/Pak2/Pak2_page-0001.jpg" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/TestProg/TestSegML.py" beforeDir="false" afterPath="$PROJECT_DIR$/TestProg/TestSegML.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/TestProg/TrainYOLOseg.py" beforeDir="false" afterPath="$PROJECT_DIR$/TestProg/TrainYOLOseg.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/qt-material/examples/full_features/my_theme.xml" beforeDir="false" afterPath="$PROJECT_DIR$/qt-material/examples/full_features/my_theme.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/seg_out/masks/Pak1_page-0001_mask.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/seg_out/masks/Pak1_page-0002_mask.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/seg_out/masks/Pak1_page-0003_mask.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/seg_out/masks/Pak1_page-0004_mask.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/seg_out/masks/Pak1_page-0005_mask.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/seg_out/masks/Pak1_page-0006_mask.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/seg_out/masks/Pak1_page-0007_mask.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/seg_out/masks/Pak1_page-0008_mask.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/seg_out/masks/Pak1_page-0009_mask.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/seg_out/overlay/Pak1_page-0001_overlay.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/seg_out/overlay/Pak1_page-0002_overlay.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/seg_out/overlay/Pak1_page-0003_overlay.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/seg_out/overlay/Pak1_page-0004_overlay.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/seg_out/overlay/Pak1_page-0005_overlay.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/seg_out/overlay/Pak1_page-0006_overlay.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/seg_out/overlay/Pak1_page-0007_overlay.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/seg_out/overlay/Pak1_page-0008_overlay.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/seg_out/overlay/Pak1_page-0009_overlay.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -71,7 +47,7 @@
     </option>
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
-        <entry key="$PROJECT_DIR$" value="TestV1.5" />
+        <entry key="$PROJECT_DIR$" value="TestV1.6" />
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -83,12 +59,12 @@
     &quot;assignee&quot;: &quot;LexaBoxan&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings">{
-  &quot;selectedUrlAndAccountId&quot;: {
-    &quot;url&quot;: &quot;https://github.com/LexaBoxan/Seeding.git&quot;,
-    &quot;accountId&quot;: &quot;2075cd26-3a85-44a7-9904-6f4cd6acb5ce&quot;
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/UN-GCPDS/qt-material.git",
+    "accountId": "2075cd26-3a85-44a7-9904-6f4cd6acb5ce"
   }
-}</component>
+}]]></component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 5
 }</component>
@@ -111,7 +87,7 @@
     "Python.ui_main.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "TestV1.6",
+    "git-widget-placeholder": "V2.1",
     "last_opened_file_path": "E:/_JOB_/_Python/Seeding",
     "node.js.detected.package.eslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
