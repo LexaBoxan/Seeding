@@ -16,6 +16,7 @@ from PyQt5.QtWidgets import (
     QHBoxLayout,
     QMainWindow,
     QScrollArea,
+    QStyle,
     QToolBar,
     QVBoxLayout,
     QWidget,
@@ -117,45 +118,67 @@ class ImageEditor(QMainWindow):
         toolbar.setFixedWidth(150)
         self.addToolBar(Qt.LeftToolBarArea, toolbar)
 
-        self.mask_action = QAction(QIcon(), "Создать маску", self)
+        style = self.style()
+
+        self.mask_action = QAction(
+            style.standardIcon(QStyle.SP_FileIcon), "Создать маску", self
+        )
         self.mask_action.triggered.connect(self.create_mask)
         toolbar.addAction(self.mask_action)
 
-        self.seedlings_action = QAction(QIcon(), "Найти сеянцы", self)
+        self.seedlings_action = QAction(
+            style.standardIcon(QStyle.SP_DialogOpenButton), "Найти сеянцы", self
+        )
         self.seedlings_action.triggered.connect(self.find_seedlings)
         toolbar.addAction(self.seedlings_action)
 
-        self.find_all_seedlings_action = QAction(QIcon(), "Найти все сеянцы", self)
+        self.find_all_seedlings_action = QAction(
+            style.standardIcon(QStyle.SP_BrowserReload), "Найти все сеянцы", self
+        )
         self.find_all_seedlings_action.triggered.connect(self.find_all_seedlings)
         toolbar.addAction(self.find_all_seedlings_action)
 
-        self.classify_action = QAction(QIcon(), "Классификация", self)
+        self.classify_action = QAction(
+            style.standardIcon(QStyle.SP_DialogYesButton), "Классификация", self
+        )
         self.classify_action.triggered.connect(self.classify)
         toolbar.addAction(self.classify_action)
 
-        self.rotate_action = QAction(QIcon(), "Повернуть на 90°", self)
+        self.rotate_action = QAction(
+            style.standardIcon(QStyle.SP_BrowserReload), "Повернуть на 90°", self
+        )
         self.rotate_action.triggered.connect(self.rotate_image)
         toolbar.addAction(self.rotate_action)
 
         toolbar.addSeparator()
 
-        self.report_action = QAction(QIcon(), "Создать отчет", self)
+        self.report_action = QAction(
+            style.standardIcon(QStyle.SP_FileDialogDetailedView), "Создать отчет", self
+        )
         self.report_action.triggered.connect(self.create_report)
         toolbar.addAction(self.report_action)
 
         toolbar.addSeparator()
 
-        self.zoom_in_action = QAction("Приблизить", self)
+        self.zoom_in_action = QAction(
+            style.standardIcon(QStyle.SP_ArrowUp), "Приблизить", self
+        )
         self.zoom_in_action.triggered.connect(self.zoom_in)
         toolbar.addAction(self.zoom_in_action)
 
-        self.zoom_out_action = QAction("Отдалить", self)
+        self.zoom_out_action = QAction(
+            style.standardIcon(QStyle.SP_ArrowDown), "Отдалить", self
+        )
         self.zoom_out_action.triggered.connect(self.zoom_out)
         toolbar.addAction(self.zoom_out_action)
 
-        self.fit_action = QAction("Вписать", self)
+        self.fit_action = QAction(
+            style.standardIcon(QStyle.SP_DialogResetButton), "Вписать", self
+        )
         self.fit_action.triggered.connect(self.fit_to_window)
         toolbar.addAction(self.fit_action)
+
+        self.update_action_states(False)
 
     def create_central_widget(self):
         """Создаёт центральную область отображения изображений."""
@@ -189,6 +212,14 @@ class ImageEditor(QMainWindow):
         self.right_panel.setLayout(layout)
         self.main_layout.addWidget(self.right_panel, 1)
 
+    def update_action_states(self, enabled: bool) -> None:
+        """Включает или отключает действия, зависящие от наличия изображения."""
+        self.rotate_action.setEnabled(enabled)
+        self.seedlings_action.setEnabled(enabled)
+        self.find_all_seedlings_action.setEnabled(enabled)
+        self.classify_action.setEnabled(enabled)
+        self.report_action.setEnabled(enabled)
+
     def on_tree_item_clicked(self, item, column):
         """Обрабатывает выбор элемента в дереве слоёв."""
         item_data = item.data(0, Qt.UserRole)
@@ -211,6 +242,7 @@ class ImageEditor(QMainWindow):
     def open_image(self) -> None:
         """Открывает диалог выбора файла и загружает изображение или PDF."""
         self.image_storage = OriginalImage()
+        self.update_action_states(False)
         file_name, _ = QFileDialog.getOpenFileName(
             self,
             "Открыть изображение или PDF",
@@ -234,10 +266,14 @@ class ImageEditor(QMainWindow):
                 [] for _ in range(len(self.image_storage.images))
             ]
 
+        self.update_action_states(bool(self.image_storage.images))
+
     def load_image(self, file_name: str) -> np.ndarray | None:
         """Загружает изображение с диска."""
         try:
             image = cv2.imread(file_name)
+            if image is not None:
+                self.update_action_states(True)
             return image
         except Exception as e:
             logger.error("Ошибка при загрузке изображения: %s", e)
@@ -271,6 +307,8 @@ class ImageEditor(QMainWindow):
             self.image_storage.class_object_image = [
                 [] for _ in range(len(self.image_storage.images))
             ]
+
+            self.update_action_states(bool(self.image_storage.images))
 
         except Exception as e:
             logger.error("Ошибка при загрузке PDF: %s", e)
