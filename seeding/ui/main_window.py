@@ -15,12 +15,11 @@ from PyQt5.QtWidgets import (
     QGroupBox,
     QLabel,
     QMainWindow,
+    QProgressBar,
     QScrollArea,
     QSplitter,
-
     QStyle,
     QToolBar,
-    QProgressBar,
     QVBoxLayout,
     QWidget,
 )
