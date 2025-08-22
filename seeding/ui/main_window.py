@@ -36,7 +36,8 @@ from .bbox_item import BBoxItem
 logger = logging.getLogger(__name__)
 
 # Ожидаемые классы для модели классификации
-EXPECTED_CLASSIFY_NAMES = {0: "flower", 1: "root", 2: "stem"}
+# Используем список без привязки к индексам, чтобы лишь проверять состав классов
+EXPECTED_CLASSIFY_NAMES = ["flower", "root", "stem"]
 
 
 class DraggableScrollArea(QScrollArea):
@@ -795,16 +796,17 @@ class ImageEditor(QMainWindow):
                     if isinstance(model_names, dict)
                     else list(model_names)
                 )
-                expected = list(EXPECTED_CLASSIFY_NAMES.values())
-                if set(loaded_names) != set(expected):  # pragma: no cover - логирование
-                    logger.warning(
+                if set(loaded_names) != set(EXPECTED_CLASSIFY_NAMES):  # pragma: no cover - логирование
+                    logger.error(
                         "classify: unexpected class names %s, expected %s",
                         loaded_names,
-                        expected,
+                        EXPECTED_CLASSIFY_NAMES,
                     )
-                self.classify_model.names = EXPECTED_CLASSIFY_NAMES
+                    self.classify_model = None
+                    return
             except Exception as e:  # pragma: no cover - логирование
                 logger.error("Не удалось загрузить модель классификации: %s", e)
+                self.classify_model = None
                 return
 
         for img_idx, objects in enumerate(self.image_storage.class_object_image):
@@ -838,6 +840,7 @@ class ImageEditor(QMainWindow):
                     for i in reversed(range(seeding_item.childCount())):
                         seeding_item.takeChild(i)
 
+                names = self.classify_model.names
                 for cls_idx, (cls_id, conf, coords) in enumerate(detections):
                     cls_id = int(cls_id)
                     conf = float(conf)
@@ -846,7 +849,13 @@ class ImageEditor(QMainWindow):
                     # Возвращаем изображение части в ту ориентацию, в которой показывается сеянец
                     if rotation_k:
                         part_img = np.rot90(part_img, k=rotation_k)
-                    class_name = self.classify_model.names.get(cls_id, str(cls_id))
+                    class_name = (
+                        names.get(cls_id, str(cls_id))
+                        if isinstance(names, dict)
+                        else (
+                            names[cls_id] if 0 <= cls_id < len(names) else str(cls_id)
+                        )
+                    )
 
                     w, h = crop_for_model.shape[1], crop_for_model.shape[0]
                     lx1, ly1, lx2, ly2 = rotate_bbox(
