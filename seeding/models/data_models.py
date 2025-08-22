@@ -40,6 +40,7 @@ class ObjectImage:
     image: List[Union[np.ndarray, Image.Image]] = field(default_factory=list)
     image_all_class: Optional[List[AllClassImage]] = None
     bbox: tuple = None  # (x1, y1, x2, y2)
+    rotation_k: int = 0  # Поворот, применённый к crop (значение k для np.rot90)
 
 
 @dataclass
