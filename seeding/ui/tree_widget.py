@@ -41,3 +41,21 @@ class LayerTreeWidget(QTreeWidget):
         )
         parent.addChild(child)
         return child
+
+    def add_class_item(self, parent, name, description, parent_index, seeding_index):
+        """Добавляет подпункт классификации под выбранным сеянцем."""
+        child = QTreeWidgetItem(parent)
+        child.setText(0, name)
+        child.setText(1, description)
+        child.setData(
+            0,
+            Qt.UserRole,
+            {
+                "type": "class",
+                "parent_index": parent_index,
+                "seeding_index": seeding_index,
+                "class_name": name,
+            },
+        )
+        parent.addChild(child)
+        return child

@@ -14,12 +14,14 @@ class AllClassImage:
     Attributes:
         class_name (str): Название класса (например, тип растения).
         confidence (float): Уверенность модели в принадлежности к классу (0.0 - 1.0).
-        image (Union[np.ndarray, Image.Image]): Картинка участка, соответствующего данному классу.
+        image (Optional[Union[np.ndarray, Image.Image]]): Картинка участка, соответствующего данному классу.
+        bbox (tuple | None): Координаты рамки (x1, y1, x2, y2) внутри кропа.
     """
 
     class_name: str
     confidence: float
-    image: Union[np.ndarray, Image.Image]
+    image: Optional[Union[np.ndarray, Image.Image]]
+    bbox: tuple | None = None
 
 
 @dataclass
