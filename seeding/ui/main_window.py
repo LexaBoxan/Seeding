@@ -288,15 +288,16 @@ class ImageEditor(QMainWindow):
                 parent_idx = item_data["parent_index"]
                 seed_idx = item_data["index"]
                 self._active_image_index = parent_idx
-                self.display_image_with_boxes(parent_idx)
-                key = (parent_idx, seed_idx)
-                if hasattr(self, "rect_items") and key in self.rect_items:
-                    for rect in self.rect_items.values():
-                        rect.setEditable(False)
-                        rect.setSelected(False)
-                    rect_item = self.rect_items[key]
-                    rect_item.setEditable(True)
-                    rect_item.setSelected(True)
+                self.display_seeding_with_boxes(parent_idx, seed_idx)
+            elif item_data["type"] == "class":
+                parent = item.parent()
+                if parent is not None:
+                    pdata = parent.data(0, Qt.UserRole)
+                    if pdata and pdata.get("type") == "seeding":
+                        parent_idx = pdata["parent_index"]
+                        seed_idx = pdata["index"]
+                        self._active_image_index = parent_idx
+                        self.display_seeding_with_boxes(parent_idx, seed_idx)
             else:
                 return
 
@@ -693,6 +694,40 @@ class ImageEditor(QMainWindow):
                             sub_item.setEditable(False)
                             self.graphics_scene.addItem(sub_item)
 
+    def display_seeding_with_boxes(self, parent_idx: int, seed_idx: int) -> None:
+        """Отображает crop сеянца с его классификационными боксами."""
+        if (
+            not self.image_storage.class_object_image
+            or parent_idx >= len(self.image_storage.class_object_image)
+            or seed_idx >= len(self.image_storage.class_object_image[parent_idx])
+        ):
+            return
+
+        obj = self.image_storage.class_object_image[parent_idx][seed_idx]
+        if not obj.image:
+            return
+
+        crop_img = obj.image[0].copy()
+        self.display_image(crop_img)
+
+        x_off, y_off = 0, 0
+        if obj.bbox:
+            x_off, y_off = obj.bbox[0], obj.bbox[1]
+
+        if obj.image_all_class:
+            for cls_idx, cls_obj in enumerate(obj.image_all_class):
+                if cls_obj.bbox:
+                    gx1, gy1, gx2, gy2 = cls_obj.bbox
+                    lx1, ly1 = gx1 - x_off, gy1 - y_off
+                    lx2, ly2 = gx2 - x_off, gy2 - y_off
+                    rect = QRectF(lx1, ly1, lx2 - lx1, ly2 - ly1)
+                    rect_item = BBoxItem(
+                        rect, cls_obj, color=Qt.red, offset=(x_off, y_off)
+                    )
+                    rect_item.setEditable(True)
+                    self.graphics_scene.addItem(rect_item)
+                    self.rect_items[(parent_idx, seed_idx, cls_idx)] = rect_item
+
     def save_changes(self) -> None:
         """Пересохраняет crop-изображения после изменения рамок."""
         if not self.image_storage.images or not self.image_storage.class_object_image:
@@ -705,6 +740,11 @@ class ImageEditor(QMainWindow):
                 if obj.bbox:
                     x1, y1, x2, y2 = obj.bbox
                     obj.image = [base_img[y1:y2, x1:x2].copy()]
+                if obj.image_all_class:
+                    for cls in obj.image_all_class:
+                        if cls.bbox:
+                            x1, y1, x2, y2 = cls.bbox
+                            cls.image = base_img[y1:y2, x1:x2].copy()
         logger.info("save_changes: обновлённые координаты сохранены")
 
     def classify(self) -> None:
