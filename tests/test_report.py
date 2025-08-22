@@ -14,7 +14,7 @@ def test_create_pdf_report(tmp_path):
 
 def test_annotate_image_with_class_bbox():
     img = np.zeros((10, 10, 3), dtype=np.uint8)
-    cls = AllClassImage("part", 0.8, img, bbox=(2, 2, 4, 4))
+    cls = AllClassImage("part", 0.8, img, bbox=(1, 1, 3, 3))
     obj = ObjectImage(
         class_name="Seeding",
         confidence=0.9,

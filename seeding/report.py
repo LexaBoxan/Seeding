@@ -24,6 +24,7 @@ from reportlab.platypus import (
 )
 
 from seeding.models.data_models import ObjectImage, OriginalImage
+from seeding.utils import rotate_bbox
 
 
 def _np_to_pil(img: np.ndarray) -> Image.Image:
@@ -56,10 +57,22 @@ def _annotate_image(img: np.ndarray, objects: list[ObjectImage]) -> np.ndarray:
                 (0, 255, 0),
                 2,
             )
-        if obj.image_all_class:
+        if obj.image_all_class and obj.bbox:
+            k = getattr(obj, "rotation_k", 0) % 4
+            h_rot, w_rot = obj.image[0].shape[:2] if obj.image else (0, 0)
             for cls in obj.image_all_class:
                 if cls.bbox:
-                    x1, y1, x2, y2 = cls.bbox
+                    lx1, ly1, lx2, ly2 = cls.bbox
+                    if k and h_rot and w_rot:
+                        ux1, uy1, ux2, uy2 = rotate_bbox(
+                            lx1, ly1, lx2, ly2, w_rot, h_rot, (-k) % 4
+                        )
+                    else:
+                        ux1, uy1, ux2, uy2 = lx1, ly1, lx2, ly2
+                    x1 = obj.bbox[0] + ux1
+                    y1 = obj.bbox[1] + uy1
+                    x2 = obj.bbox[0] + ux2
+                    y2 = obj.bbox[1] + uy2
                     cv2.rectangle(annotated, (x1, y1), (x2, y2), (255, 0, 0), 2)
     return annotated
 

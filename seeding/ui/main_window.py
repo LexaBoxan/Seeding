@@ -29,7 +29,7 @@ from ultralytics import YOLO
 
 from seeding.config import ROTATE_K, DEFAULT_CLASSIFY_WEIGHTS_PATH
 from seeding.models.data_models import AllClassImage, ObjectImage, OriginalImage
-from seeding.utils import simple_nms
+from seeding.utils import simple_nms, rotate_bbox
 from .tree_widget import LayerTreeWidget
 from .bbox_item import BBoxItem
 
@@ -704,44 +704,12 @@ class ImageEditor(QMainWindow):
         crop_img = obj.image[0].copy()
         self.display_image(crop_img)
 
-        x_off, y_off = 0, 0
-        if obj.bbox:
-            x_off, y_off = obj.bbox[0], obj.bbox[1]
-
         if obj.image_all_class:
             for cls_idx, cls_obj in enumerate(obj.image_all_class):
                 if cls_obj.bbox:
-                    gx1, gy1, gx2, gy2 = cls_obj.bbox
-                    lx1, ly1 = gx1 - x_off, gy1 - y_off
-                    lx2, ly2 = gx2 - x_off, gy2 - y_off
-
-                    rotation_k = getattr(obj, "rotation_k", 0) % 4
-                    if rotation_k:
-                        w = obj.bbox[2] - obj.bbox[0]
-                        h = obj.bbox[3] - obj.bbox[1]
-                        coords = [
-                            (lx1, ly1),
-                            (lx2, ly1),
-                            (lx1, ly2),
-                            (lx2, ly2),
-                        ]
-                        if rotation_k == 1:
-                            points = [(y, w - 1 - x) for x, y in coords]
-                        elif rotation_k == 2:
-                            points = [(w - 1 - x, h - 1 - y) for x, y in coords]
-                        elif rotation_k == 3:
-                            points = [(h - 1 - y, x) for x, y in coords]
-                        else:
-                            points = coords
-                        xs = [p[0] for p in points]
-                        ys = [p[1] for p in points]
-                        lx1, lx2 = min(xs), max(xs)
-                        ly1, ly2 = min(ys), max(ys)
-
+                    lx1, ly1, lx2, ly2 = cls_obj.bbox
                     rect = QRectF(lx1, ly1, lx2 - lx1, ly2 - ly1)
-                    rect_item = BBoxItem(
-                        rect, cls_obj, color=Qt.red, offset=(x_off, y_off)
-                    )
+                    rect_item = BBoxItem(rect, cls_obj, color=Qt.red)
                     rect_item.setEditable(True)
                     self.graphics_scene.addItem(rect_item)
                     self.rect_items[(parent_idx, seed_idx, cls_idx)] = rect_item
@@ -783,12 +751,27 @@ class ImageEditor(QMainWindow):
                         crop = np.rot90(crop, k=obj.rotation_k)
                     obj.image = [crop]
                 if obj.image_all_class:
+                    k = getattr(obj, "rotation_k", 0) % 4
+                    h_rot, w_rot = obj.image[0].shape[:2] if obj.image else (0, 0)
                     for cls in obj.image_all_class:
                         if cls.bbox:
-                            x1, y1, x2, y2 = cls.bbox
-                            part = base_img[y1:y2, x1:x2].copy()
-                            if getattr(obj, "rotation_k", 0):
-                                part = np.rot90(part, k=obj.rotation_k)
+                            lx1, ly1, lx2, ly2 = cls.bbox
+                            if k and h_rot and w_rot:
+                                ux1, uy1, ux2, uy2 = rotate_bbox(
+                                    lx1, ly1, lx2, ly2, w_rot, h_rot, (-k) % 4
+                                )
+                            else:
+                                ux1, uy1, ux2, uy2 = lx1, ly1, lx2, ly2
+                            if obj.bbox:
+                                gx1 = obj.bbox[0] + ux1
+                                gy1 = obj.bbox[1] + uy1
+                                gx2 = obj.bbox[0] + ux2
+                                gy2 = obj.bbox[1] + uy2
+                            else:
+                                gx1, gy1, gx2, gy2 = ux1, uy1, ux2, uy2
+                            part = base_img[gy1:gy2, gx1:gx2].copy()
+                            if k:
+                                part = np.rot90(part, k=k)
                             cls.image = part
         logger.info("save_changes: обновлённые координаты сохранены")
 
@@ -838,21 +821,18 @@ class ImageEditor(QMainWindow):
                     part_img = np.rot90(part_img, k=rotation_k)
                 class_name = self.classify_model.names.get(cls_id, str(cls_id))
 
-                if obj.bbox:
-                    gx1 = obj.bbox[0] + x1
-                    gy1 = obj.bbox[1] + y1
-                    gx2 = obj.bbox[0] + x2
-                    gy2 = obj.bbox[1] + y2
-                    global_bbox = (gx1, gy1, gx2, gy2)
-                else:
-                    global_bbox = (x1, y1, x2, y2)
+                w, h = crop_for_model.shape[1], crop_for_model.shape[0]
+                lx1, ly1, lx2, ly2 = rotate_bbox(
+                    x1, y1, x2, y2, w, h, rotation_k
+                )
+                local_bbox = (lx1, ly1, lx2, ly2)
 
                 obj.image_all_class = [
                     AllClassImage(
                         class_name=class_name,
                         confidence=conf,
                         image=part_img,
-                        bbox=global_bbox,
+                        bbox=local_bbox,
                     )
                 ]
 
