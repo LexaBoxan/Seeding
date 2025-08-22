@@ -815,11 +815,8 @@ class ImageEditor(QMainWindow):
                 if not obj.image:
                     continue
                 crop = obj.image[0]
-                rotation_k = getattr(obj, "rotation_k", 0)
-                # Для корректной классификации разворачиваем изображение в исходную ориентацию
-                crop_for_model = np.rot90(crop, k=-rotation_k) if rotation_k else crop
                 try:
-                    result = self.classify_model(crop_for_model)[0]
+                    result = self.classify_model(crop)[0]
                 except Exception as e:  # pragma: no cover - логирование
                     logger.error("Ошибка классификации: %s", e)
                     continue
@@ -845,10 +842,7 @@ class ImageEditor(QMainWindow):
                     cls_id = int(cls_id)
                     conf = float(conf)
                     x1, y1, x2, y2 = map(int, coords)
-                    part_img = crop_for_model[y1:y2, x1:x2].copy()
-                    # Возвращаем изображение части в ту ориентацию, в которой показывается сеянец
-                    if rotation_k:
-                        part_img = np.rot90(part_img, k=rotation_k)
+                    part_img = crop[y1:y2, x1:x2].copy()
                     class_name = (
                         names.get(cls_id, str(cls_id))
                         if isinstance(names, dict)
@@ -857,11 +851,7 @@ class ImageEditor(QMainWindow):
                         )
                     )
 
-                    w, h = crop_for_model.shape[1], crop_for_model.shape[0]
-                    lx1, ly1, lx2, ly2 = rotate_bbox(
-                        x1, y1, x2, y2, w, h, rotation_k
-                    )
-                    local_bbox = (lx1, ly1, lx2, ly2)
+                    local_bbox = (x1, y1, x2, y2)
 
                     obj.image_all_class.append(
                         AllClassImage(
