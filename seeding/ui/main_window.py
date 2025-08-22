@@ -6,18 +6,19 @@ import os
 import cv2
 import fitz
 import numpy as np
-from PyQt5.QtCore import QPoint, Qt, QThread, pyqtSignal
-from PyQt5.QtGui import QIcon, QImage, QPixmap
+from PyQt5.QtCore import QPoint, Qt, QThread, pyqtSignal, QRectF
+from PyQt5.QtGui import QIcon, QImage, QPixmap, QTransform
 
 from PyQt5.QtWidgets import (
     QAction,
     QFileDialog,
     QGroupBox,
-    QLabel,
+    QGraphicsPixmapItem,
+    QGraphicsScene,
+    QGraphicsView,
     QMainWindow,
     QScrollArea,
     QSplitter,
-
     QStyle,
     QToolBar,
     QProgressBar,
@@ -30,6 +31,7 @@ from seeding.config import ROTATE_K, DEFAULT_CLASSIFY_WEIGHTS_PATH
 from seeding.models.data_models import AllClassImage, ObjectImage, OriginalImage
 from seeding.utils import simple_nms
 from .tree_widget import LayerTreeWidget
+from .bbox_item import BBoxItem
 
 logger = logging.getLogger(__name__)
 
@@ -152,6 +154,7 @@ class ImageEditor(QMainWindow):
             self.find_all_seedlings_action,
             self.classify_action,
             self.report_action,
+            self.save_action,
         ):
             action.setEnabled(has_image)
 
@@ -225,6 +228,16 @@ class ImageEditor(QMainWindow):
         self.fit_action.triggered.connect(self.fit_to_window)
         toolbar.addAction(self.fit_action)
 
+        toolbar.addSeparator()
+
+        self.save_action = QAction(
+            style.standardIcon(QStyle.SP_DialogSaveButton),
+            "Сохранить изменения",
+            self,
+        )
+        self.save_action.triggered.connect(self.save_changes)
+        toolbar.addAction(self.save_action)
+
         self._update_action_states()
 
     def create_central_widget(self):
@@ -232,11 +245,14 @@ class ImageEditor(QMainWindow):
         self.scroll_area = DraggableScrollArea()
         self.scroll_area.setWidgetResizable(True)
 
-        self.image_label = QLabel("Тут будет изображение")
-        self.image_label.setAlignment(Qt.AlignCenter)
-        self.image_label.setStyleSheet("border: 1px dashed gray;")
+        self.graphics_view = QGraphicsView()
+        self.graphics_scene = QGraphicsScene(self)
+        self.graphics_view.setScene(self.graphics_scene)
+        self.image_item = QGraphicsPixmapItem()
+        self.graphics_scene.addItem(self.image_item)
+        self.rect_items = {}
 
-        self.scroll_area.setWidget(self.image_label)
+        self.scroll_area.setWidget(self.graphics_view)
 
         self.splitter = QSplitter(Qt.Horizontal)
         self.splitter.addWidget(self.scroll_area)
@@ -271,11 +287,16 @@ class ImageEditor(QMainWindow):
             elif item_data["type"] == "seeding":
                 parent_idx = item_data["parent_index"]
                 seed_idx = item_data["index"]
-                crop = self.image_storage.class_object_image[parent_idx][
-                    seed_idx
-                ].image[0]
                 self._active_image_index = parent_idx
-                self.display_image(crop)
+                self.display_image_with_boxes(parent_idx)
+                key = (parent_idx, seed_idx)
+                if hasattr(self, "rect_items") and key in self.rect_items:
+                    for rect in self.rect_items.values():
+                        rect.setEditable(False)
+                        rect.setSelected(False)
+                    rect_item = self.rect_items[key]
+                    rect_item.setEditable(True)
+                    rect_item.setSelected(True)
             else:
                 return
 
@@ -386,6 +407,10 @@ class ImageEditor(QMainWindow):
         self._original_image = image
         self._original_pixmap = QPixmap.fromImage(q_image)
 
+        self.graphics_scene.clear()
+        self.image_item = self.graphics_scene.addPixmap(self._original_pixmap)
+        self.rect_items = {}
+
         scroll_size = self.scroll_area.viewport().size()
         ratio_w = scroll_size.width() / self._original_pixmap.width()
         ratio_h = scroll_size.height() / self._original_pixmap.height()
@@ -413,14 +438,15 @@ class ImageEditor(QMainWindow):
     def update_image_zoom(self) -> None:
         """Применяет текущий масштаб к изображению."""
         if hasattr(self, "_original_pixmap"):
-            pixmap = self._original_pixmap
-            new_width = max(1, int(pixmap.width() * self.zoom_factor))
-            new_height = max(1, int(pixmap.height() * self.zoom_factor))
-            scaled_pixmap = pixmap.scaled(
-                new_width, new_height, Qt.KeepAspectRatio, Qt.SmoothTransformation
+            transform = QTransform()
+            transform.scale(self.zoom_factor, self.zoom_factor)
+            self.graphics_view.setTransform(transform)
+            self.graphics_scene.setSceneRect(
+                0,
+                0,
+                self._original_pixmap.width(),
+                self._original_pixmap.height(),
             )
-            self.image_label.setPixmap(scaled_pixmap)
-            self.image_label.adjustSize()
 
     def rotate_image(self) -> None:
         """Поворачивает выбранное изображение или crop на 90 градусов."""
@@ -644,28 +670,33 @@ class ImageEditor(QMainWindow):
     def display_image_with_boxes(self, idx: int) -> None:
         """Отображает изображение с нанесёнными рамками объектов."""
         image = self.image_storage.images[idx].copy()
+        self.display_image(image)
         if (
             self.image_storage.class_object_image
             and len(self.image_storage.class_object_image) > idx
         ):
-            for i, obj in enumerate(
-                self.image_storage.class_object_image[idx], start=1
-            ):
+            for obj_idx, obj in enumerate(self.image_storage.class_object_image[idx]):
                 if obj.bbox:
                     x1, y1, x2, y2 = obj.bbox
-                    cv2.rectangle(
-                        image, (x1, y1), (x2, y2), color=(0, 255, 0), thickness=2
-                    )
-                    cv2.putText(
-                        image,
-                        f"{i}",  # Нумерация
-                        (x1, y1 - 5),
-                        cv2.FONT_HERSHEY_SIMPLEX,
-                        0.8,
-                        (0, 255, 0),
-                        2,
-                    )
-        self.display_image(image)
+                    rect = QRectF(x1, y1, x2 - x1, y2 - y1)
+                    rect_item = BBoxItem(rect, obj)
+                    rect_item.setEditable(False)
+                    self.graphics_scene.addItem(rect_item)
+                    self.rect_items[(idx, obj_idx)] = rect_item
+
+    def save_changes(self) -> None:
+        """Пересохраняет crop-изображения после изменения рамок."""
+        if not self.image_storage.images or not self.image_storage.class_object_image:
+            return
+        for img_idx, objects in enumerate(self.image_storage.class_object_image):
+            if img_idx >= len(self.image_storage.images):
+                continue
+            base_img = self.image_storage.images[img_idx]
+            for obj in objects:
+                if obj.bbox:
+                    x1, y1, x2, y2 = obj.bbox
+                    obj.image = [base_img[y1:y2, x1:x2].copy()]
+        logger.info("save_changes: обновлённые координаты сохранены")
 
     def classify(self) -> None:
         """Определяет для каждого сеянца класс: flower, root или stem."""
