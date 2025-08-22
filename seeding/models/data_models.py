@@ -15,11 +15,13 @@ class AllClassImage:
         class_name (str): Название класса (например, тип растения).
         confidence (float): Уверенность модели в принадлежности к классу (0.0 - 1.0).
         image (Union[np.ndarray, Image.Image]): Картинка участка, соответствующего данному классу.
+        bbox (Optional[tuple[int, int, int, int]]): Координаты рамки (x1, y1, x2, y2).
     """
 
     class_name: str
     confidence: float
     image: Union[np.ndarray, Image.Image]
+    bbox: Optional[tuple[int, int, int, int]] = None
 
 
 @dataclass

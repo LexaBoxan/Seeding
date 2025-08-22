@@ -26,12 +26,14 @@ from PyQt5.QtWidgets import (
 )
 from ultralytics import YOLO
 
-from seeding.config import ROTATE_K
-from seeding.models.data_models import ObjectImage, OriginalImage
+from seeding.config import ROTATE_K, DEFAULT_CLASSIFY_WEIGHTS_PATH
+from seeding.models.data_models import AllClassImage, ObjectImage, OriginalImage
 from seeding.utils import simple_nms
 from .tree_widget import LayerTreeWidget
 
 logger = logging.getLogger(__name__)
+
+CLASSIFY_PARTS = ("flower", "root", "stem")
 
 
 class DraggableScrollArea(QScrollArea):
@@ -118,6 +120,7 @@ class ImageEditor(QMainWindow):
         self.image_storage = OriginalImage()
         self.weights_path = weights_path
         self.model = YOLO(weights_path)
+        self.classify_model = None
 
         self.init_ui()
 
@@ -270,11 +273,8 @@ class ImageEditor(QMainWindow):
             elif item_data["type"] == "seeding":
                 parent_idx = item_data["parent_index"]
                 seed_idx = item_data["index"]
-                crop = self.image_storage.class_object_image[parent_idx][
-                    seed_idx
-                ].image[0]
                 self._active_image_index = parent_idx
-                self.display_image(crop)
+                self.display_crop_with_boxes(parent_idx, seed_idx)
             else:
                 return
 
@@ -666,10 +666,119 @@ class ImageEditor(QMainWindow):
                     )
         self.display_image(image)
 
+    def display_crop_with_boxes(self, parent_idx: int, seed_idx: int) -> None:
+        """Отображает обрезок сеянца с рамками классификации."""
+        obj = self.image_storage.class_object_image[parent_idx][seed_idx]
+        image = obj.image[0].copy()
+        if obj.image_all_class:
+            for class_obj in obj.image_all_class:
+                if class_obj.bbox:
+                    x1, y1, x2, y2 = class_obj.bbox
+                    cv2.rectangle(
+                        image, (x1, y1), (x2, y2), color=(0, 255, 0), thickness=2
+                    )
+                    cv2.putText(
+                        image,
+                        class_obj.class_name,
+                        (x1, y1 - 5),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        0.8,
+                        (0, 255, 0),
+                        2,
+                    )
+        self.display_image(image)
+
     def classify(self) -> None:
-        """Классифицирует найденные объекты (заглушка)."""
+        """Определяет для каждого сеянца класс: flower, root или stem."""
         self._update_action_states()
-        logger.info("Классификация — пока не реализовано")
+
+        if not self.image_storage.class_object_image:
+            logger.warning("classify: Нет объектов для классификации")
+            return
+
+        if self.classify_model is None:
+            try:
+                self.classify_model = YOLO(str(DEFAULT_CLASSIFY_WEIGHTS_PATH))
+            except Exception as e:  # pragma: no cover - логирование
+                logger.error("Не удалось загрузить модель классификации: %s", e)
+                return
+
+        for img_idx, objects in enumerate(self.image_storage.class_object_image):
+            page_item = self.tree_widget.topLevelItem(img_idx)
+            for obj_idx, obj in enumerate(objects):
+                if not obj.image:
+                    continue
+                crop = obj.image[0]
+                try:
+                    result = self.classify_model(crop)[0]
+                except Exception as e:  # pragma: no cover - логирование
+                    logger.error("Ошибка классификации: %s", e)
+                    continue
+
+                boxes = result.boxes
+                detected = {}
+                if boxes is not None and len(boxes) > 0:
+                    for box in boxes:
+                        cls_id = int(box.cls.item())
+                        class_name = self.classify_model.names.get(cls_id, str(cls_id))
+                        if class_name in CLASSIFY_PARTS:
+                            conf = float(box.conf.item())
+                            x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
+                            if (
+                                class_name not in detected
+                                or conf > detected[class_name]["conf"]
+                            ):
+                                detected[class_name] = {
+                                    "conf": conf,
+                                    "bbox": (x1, y1, x2, y2),
+                                }
+                else:
+                    logger.debug("classify: не найдены классы для объекта %s", obj_idx)
+
+                obj.image_all_class = []
+                seeding_item = None
+                if page_item is not None:
+                    seeding_item = page_item.child(obj_idx)
+                    if seeding_item is not None:
+                        for i in reversed(range(seeding_item.childCount())):
+                            seeding_item.takeChild(i)
+
+                for name in CLASSIFY_PARTS:
+                    info = detected.get(name)
+                    if info:
+                        x1, y1, x2, y2 = info["bbox"]
+                        part_img = crop[y1:y2, x1:x2].copy()
+                        obj.image_all_class.append(
+                            AllClassImage(
+                                class_name=name,
+                                confidence=info["conf"],
+                                image=part_img,
+                                bbox=info["bbox"],
+                            )
+                        )
+                        if seeding_item is not None:
+                            self.tree_widget.add_class_item(
+                                seeding_item,
+                                name,
+                                f"Уверенность: {info['conf']:.2f}",
+                            )
+                    else:
+                        if seeding_item is not None:
+                            self.tree_widget.add_class_item(
+                                seeding_item,
+                                name,
+                                "Не найден",
+                            )
+
+        selected_item = self.tree_widget.currentItem()
+        if selected_item:
+            item_data = selected_item.data(0, Qt.UserRole)
+            if item_data and item_data.get("type") == "seeding":
+                self.display_crop_with_boxes(
+                    item_data["parent_index"], item_data["index"]
+                )
+
+        logger.info("classify: завершено")
 
     def create_report(self) -> None:
         """Создаёт PDF-отчёт по текущим результатам детекции."""
