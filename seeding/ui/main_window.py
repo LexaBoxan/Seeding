@@ -35,6 +35,10 @@ from .bbox_item import BBoxItem
 
 logger = logging.getLogger(__name__)
 
+# Ожидаемые классы для модели классификации
+# Используем список без привязки к индексам, чтобы лишь проверять состав классов
+EXPECTED_CLASSIFY_NAMES = ["flower", "root", "stem"]
+
 
 class DraggableScrollArea(QScrollArea):
     """
@@ -776,7 +780,7 @@ class ImageEditor(QMainWindow):
         logger.info("save_changes: обновлённые координаты сохранены")
 
     def classify(self) -> None:
-        """Определяет для каждого сеянца класс: flower, root или stem."""
+        """Определяет для каждого сеянца классы: flower, root и stem."""
         self._update_action_states()
 
         if not self.image_storage.class_object_image:
@@ -786,8 +790,23 @@ class ImageEditor(QMainWindow):
         if self.classify_model is None:
             try:
                 self.classify_model = YOLO(str(DEFAULT_CLASSIFY_WEIGHTS_PATH))
+                model_names = self.classify_model.names
+                loaded_names = (
+                    list(model_names.values())
+                    if isinstance(model_names, dict)
+                    else list(model_names)
+                )
+                if set(loaded_names) != set(EXPECTED_CLASSIFY_NAMES):  # pragma: no cover - логирование
+                    logger.error(
+                        "classify: unexpected class names %s, expected %s",
+                        loaded_names,
+                        EXPECTED_CLASSIFY_NAMES,
+                    )
+                    self.classify_model = None
+                    return
             except Exception as e:  # pragma: no cover - логирование
                 logger.error("Не удалось загрузить модель классификации: %s", e)
+                self.classify_model = None
                 return
 
         for img_idx, objects in enumerate(self.image_storage.class_object_image):
@@ -810,44 +829,57 @@ class ImageEditor(QMainWindow):
                     logger.debug("classify: не найден класс для объекта %s", obj_idx)
                     continue
 
-                best_idx = int(boxes.conf.argmax())
-                box = boxes[best_idx]
-                cls_id = int(box.cls.item())
-                conf = float(box.conf.item())
-                x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
-                part_img = crop_for_model[y1:y2, x1:x2].copy()
-                # Возвращаем изображение части в ту ориентацию, в которой показывается сеянец
-                if rotation_k:
-                    part_img = np.rot90(part_img, k=rotation_k)
-                class_name = self.classify_model.names.get(cls_id, str(cls_id))
-
-                w, h = crop_for_model.shape[1], crop_for_model.shape[0]
-                lx1, ly1, lx2, ly2 = rotate_bbox(
-                    x1, y1, x2, y2, w, h, rotation_k
+                detections = list(
+                    zip(boxes.cls.tolist(), boxes.conf.tolist(), boxes.xyxy.tolist())
                 )
-                local_bbox = (lx1, ly1, lx2, ly2)
+                detections.sort(key=lambda x: x[1], reverse=True)
 
-                obj.image_all_class = [
-                    AllClassImage(
-                        class_name=class_name,
-                        confidence=conf,
-                        image=part_img,
-                        bbox=local_bbox,
+                obj.image_all_class = []
+                seeding_item = page_item.child(obj_idx) if page_item is not None else None
+                if seeding_item is not None:
+                    for i in reversed(range(seeding_item.childCount())):
+                        seeding_item.takeChild(i)
+
+                names = self.classify_model.names
+                for cls_idx, (cls_id, conf, coords) in enumerate(detections):
+                    cls_id = int(cls_id)
+                    conf = float(conf)
+                    x1, y1, x2, y2 = map(int, coords)
+                    part_img = crop_for_model[y1:y2, x1:x2].copy()
+                    # Возвращаем изображение части в ту ориентацию, в которой показывается сеянец
+                    if rotation_k:
+                        part_img = np.rot90(part_img, k=rotation_k)
+                    class_name = (
+                        names.get(cls_id, str(cls_id))
+                        if isinstance(names, dict)
+                        else (
+                            names[cls_id] if 0 <= cls_id < len(names) else str(cls_id)
+                        )
                     )
-                ]
 
-                if page_item is not None:
-                    seeding_item = page_item.child(obj_idx)
+                    w, h = crop_for_model.shape[1], crop_for_model.shape[0]
+                    lx1, ly1, lx2, ly2 = rotate_bbox(
+                        x1, y1, x2, y2, w, h, rotation_k
+                    )
+                    local_bbox = (lx1, ly1, lx2, ly2)
+
+                    obj.image_all_class.append(
+                        AllClassImage(
+                            class_name=class_name,
+                            confidence=conf,
+                            image=part_img,
+                            bbox=local_bbox,
+                        )
+                    )
+
                     if seeding_item is not None:
-                        for i in reversed(range(seeding_item.childCount())):
-                            seeding_item.takeChild(i)
                         self.tree_widget.add_class_item(
                             seeding_item,
                             class_name,
                             f"Уверенность: {conf:.2f}",
                             img_idx,
                             obj_idx,
-                            0,
+                            cls_idx,
                         )
 
         active_idx = getattr(self, "_active_image_index", 0)
