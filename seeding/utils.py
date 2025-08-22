@@ -42,3 +42,30 @@ def simple_nms(boxes, scores, iou_threshold=0.4):
         order = order[inds + 1]
     logger.debug("simple_nms: после NMS осталось %s боксов", len(keep))
     return keep
+
+
+def rotate_bbox(x1, y1, x2, y2, w, h, k):
+    """Повернуть прямоугольник на ``k``·90° против часовой стрелки.
+
+    Args:
+        x1, y1, x2, y2: Координаты прямоугольника в исходной системе.
+        w, h: Ширина и высота исходного изображения.
+        k: Количество поворотов против часовой стрелки (0-3).
+
+    Returns:
+        tuple[int, int, int, int]: Координаты прямоугольника после поворота.
+    """
+    k = k % 4
+    coords = [(x1, y1), (x2, y1), (x1, y2), (x2, y2)]
+    if k == 1:
+        pts = [(y, w - 1 - x) for x, y in coords]
+    elif k == 2:
+        pts = [(w - 1 - x, h - 1 - y) for x, y in coords]
+    elif k == 3:
+        pts = [(h - 1 - y, x) for x, y in coords]
+    else:
+        pts = coords
+
+    xs = [p[0] for p in pts]
+    ys = [p[1] for p in pts]
+    return int(min(xs)), int(min(ys)), int(max(xs)), int(max(ys))
