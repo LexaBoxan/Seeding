@@ -49,12 +49,35 @@ class LayerTreeWidget(QTreeWidget):
         parent.addChild(child)
         return child
 
-    def add_class_item(self, parent, name, description):
-        """Добавляет подпункт классификации под выбранным сеянцем."""
+    def add_class_item(
+        self,
+        parent: QTreeWidgetItem,
+        name: str,
+        description: str,
+        parent_index: int,
+        seeding_index: int,
+        class_index: int,
+    ) -> QTreeWidgetItem:
+        """Добавляет подпункт классификации под выбранным сеянцем.
+
+        В элементе сохраняются индексы родительского изображения,
+        сеянца и класса, что позволяет при клике отображать
+        соответствующий вырез изображения.
+        """
+
         child = QTreeWidgetItem(parent)
         child.setText(0, name)
         child.setText(1, description)
-        child.setData(0, Qt.UserRole, {"type": "class"})
+        child.setData(
+            0,
+            Qt.UserRole,
+            {
+                "type": "class",
+                "parent_index": parent_index,
+                "seeding_index": seeding_index,
+                "class_index": class_index,
+            },
+        )
         # Убираем возможность редактирования названия элемента
         child.setFlags(child.flags() & ~Qt.ItemIsEditable)
         parent.addChild(child)
