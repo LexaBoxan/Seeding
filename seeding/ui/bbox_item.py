@@ -16,9 +16,11 @@ class BBoxItem(QGraphicsRectItem):
         obj,
         parent: QGraphicsItem | None = None,
         color=Qt.green,
+        offset=(0, 0),
     ):
         super().__init__(rect, parent)
         self.obj = obj
+        self.offset = offset
         self.setPen(QPen(color, 2))
         self.setFlags(
             QGraphicsItem.ItemIsSelectable
@@ -98,4 +100,10 @@ class BBoxItem(QGraphicsRectItem):
     def update_bbox(self) -> None:
         """Update bbox in linked ObjectImage."""
         r = self.rect().normalized()
-        self.obj.bbox = (int(r.left()), int(r.top()), int(r.right()), int(r.bottom()))
+        ox, oy = self.offset
+        self.obj.bbox = (
+            int(r.left()) + ox,
+            int(r.top()) + oy,
+            int(r.right()) + ox,
+            int(r.bottom()) + oy,
+        )
