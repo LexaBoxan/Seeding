@@ -20,6 +20,7 @@ class AllClassImage:
     class_name: str
     confidence: float
     image: Union[np.ndarray, Image.Image]
+    bbox: tuple | None = None  # (x1, y1, x2, y2) in original image coords
 
 
 @dataclass

@@ -56,6 +56,11 @@ def _annotate_image(img: np.ndarray, objects: list[ObjectImage]) -> np.ndarray:
                 (0, 255, 0),
                 2,
             )
+        if obj.image_all_class:
+            for cls in obj.image_all_class:
+                if cls.bbox:
+                    x1, y1, x2, y2 = cls.bbox
+                    cv2.rectangle(annotated, (x1, y1), (x2, y2), (255, 0, 0), 2)
     return annotated
 
 

@@ -10,10 +10,16 @@ class BBoxItem(QGraphicsRectItem):
 
     HANDLE_SIZE = 8.0
 
-    def __init__(self, rect: QRectF, obj, parent: QGraphicsItem | None = None):
+    def __init__(
+        self,
+        rect: QRectF,
+        obj,
+        parent: QGraphicsItem | None = None,
+        color=Qt.green,
+    ):
         super().__init__(rect, parent)
         self.obj = obj
-        self.setPen(QPen(Qt.green, 2))
+        self.setPen(QPen(color, 2))
         self.setFlags(
             QGraphicsItem.ItemIsSelectable
             | QGraphicsItem.ItemIsMovable
