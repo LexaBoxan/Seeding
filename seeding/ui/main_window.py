@@ -26,8 +26,8 @@ from PyQt5.QtWidgets import (
 )
 from ultralytics import YOLO
 
-from seeding.config import ROTATE_K
-from seeding.models.data_models import ObjectImage, OriginalImage
+from seeding.config import ROTATE_K, DEFAULT_CLASSIFY_WEIGHTS_PATH
+from seeding.models.data_models import AllClassImage, ObjectImage, OriginalImage
 from seeding.utils import simple_nms
 from .tree_widget import LayerTreeWidget
 
@@ -118,6 +118,7 @@ class ImageEditor(QMainWindow):
         self.image_storage = OriginalImage()
         self.weights_path = weights_path
         self.model = YOLO(weights_path)
+        self.classify_model = None
 
         self.init_ui()
 
@@ -667,9 +668,109 @@ class ImageEditor(QMainWindow):
         self.display_image(image)
 
     def classify(self) -> None:
-        """Классифицирует найденные объекты (заглушка)."""
+        """Определяет для каждого сеянца класс: flower, root или stem."""
         self._update_action_states()
-        logger.info("Классификация — пока не реализовано")
+
+        if not self.image_storage.class_object_image:
+            logger.warning("classify: Нет объектов для классификации")
+            return
+
+        if self.classify_model is None:
+            try:
+                self.classify_model = YOLO(str(DEFAULT_CLASSIFY_WEIGHTS_PATH))
+            except Exception as e:  # pragma: no cover - логирование
+                logger.error("Не удалось загрузить модель классификации: %s", e)
+                return
+
+        for img_idx, objects in enumerate(self.image_storage.class_object_image):
+            page_item = self.tree_widget.topLevelItem(img_idx)
+            for obj_idx, obj in enumerate(objects):
+                if not obj.image:
+                    continue
+                crop = obj.image[0]
+                try:
+                    result = self.classify_model(crop)[0]
+                except Exception as e:  # pragma: no cover - логирование
+                    logger.error("Ошибка классификации: %s", e)
+                    continue
+
+                boxes = result.boxes
+                if boxes is None or len(boxes) == 0:
+                    logger.debug(
+                        "classify: не найден класс для объекта %s", obj_idx
+                    )
+                    continue
+
+                parts = {}
+                for box in boxes:
+                    cls_id = int(box.cls.item())
+                    class_name = self.classify_model.names.get(cls_id, str(cls_id))
+                    conf = float(box.conf.item())
+                    if class_name not in parts or conf > parts[class_name]["conf"]:
+                        parts[class_name] = {
+                            "box": box,
+                            "conf": conf,
+                        }
+
+                annotated = crop.copy()
+                obj.image_all_class = []
+                target_classes = ["flower", "root", "stem"]
+                colors = {
+                    "flower": (0, 0, 255),
+                    "root": (0, 255, 0),
+                    "stem": (255, 0, 0),
+                }
+
+                seeding_item = None
+                if page_item is not None:
+                    seeding_item = page_item.child(obj_idx)
+                    if seeding_item is not None:
+                        for i in reversed(range(seeding_item.childCount())):
+                            seeding_item.takeChild(i)
+
+                for cls_name in target_classes:
+                    part = parts.get(cls_name)
+                    desc = "Не найдено"
+                    if part is not None:
+                        box = part["box"]
+                        conf = part["conf"]
+                        x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
+                        cv2.rectangle(
+                            annotated,
+                            (x1, y1),
+                            (x2, y2),
+                            color=colors.get(cls_name, (255, 255, 255)),
+                            thickness=2,
+                        )
+                        cv2.putText(
+                            annotated,
+                            cls_name,
+                            (x1, max(y1 - 5, 15)),
+                            cv2.FONT_HERSHEY_SIMPLEX,
+                            0.5,
+                            colors.get(cls_name, (255, 255, 255)),
+                            1,
+                        )
+                        part_img = crop[y1:y2, x1:x2].copy()
+                        obj.image_all_class.append(
+                            AllClassImage(
+                                class_name=cls_name,
+                                confidence=conf,
+                                image=part_img,
+                            )
+                        )
+                        desc = f"Уверенность: {conf:.2f}"
+
+                    if page_item is not None and seeding_item is not None:
+                        self.tree_widget.add_class_item(
+                            seeding_item,
+                            cls_name,
+                            desc,
+                        )
+
+                obj.image[0] = annotated
+
+        logger.info("classify: завершено")
 
     def create_report(self) -> None:
         """Создаёт PDF-отчёт по текущим результатам детекции."""

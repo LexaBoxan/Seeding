@@ -13,5 +13,13 @@ DEFAULT_WEIGHTS_PATH = Path(
     )
 )
 
+# Путь к весам модели классификации. Можно задать переменной YOLO_CLASSIFY_WEIGHTS_PATH
+DEFAULT_CLASSIFY_WEIGHTS_PATH = Path(
+    os.getenv(
+        "YOLO_CLASSIFY_WEIGHTS_PATH",
+        str(PROJECT_ROOT / "results" / "exp_yolov8_klass_5" / "weights" / "best.pt"),
+    )
+)
+
 # Параметр поворота на 90 градусов: значение k для np.rot90
 ROTATE_K = 1
