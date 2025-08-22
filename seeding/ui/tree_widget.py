@@ -1,6 +1,6 @@
 """Дерево слоёв для отображения оригиналов и найденных объектов."""
 
-from PyQt5.QtWidgets import QTreeWidget, QTreeWidgetItem
+from PyQt5.QtWidgets import QTreeWidget, QTreeWidgetItem, QAbstractItemView
 from PyQt5.QtCore import Qt
 
 
@@ -11,6 +11,9 @@ class LayerTreeWidget(QTreeWidget):
         """Конструктор дерева слоёв."""
         super().__init__()
         self.setHeaderLabels(["Название", "Описание"])
+        # Отключаем редактирование элементов, чтобы клики по ним
+        # вызывали открытие изображений, а не режим редактирования
+        self.setEditTriggers(QAbstractItemView.NoEditTriggers)
 
     def add_root_item(self, name, description, index, image_type, image):
         """
@@ -21,6 +24,8 @@ class LayerTreeWidget(QTreeWidget):
         root.setText(1, description)
         # Сохраняем изображение и индекс внутри UserRole
         root.setData(0, Qt.UserRole, {"index": index, "type": image_type})
+        # Убираем возможность редактирования названия элемента
+        root.setFlags(root.flags() & ~Qt.ItemIsEditable)
         self.addTopLevelItem(root)
         return root
 
@@ -39,6 +44,8 @@ class LayerTreeWidget(QTreeWidget):
             Qt.UserRole,
             {"type": "seeding", "parent_index": parent_index, "index": index},
         )
+        # Убираем возможность редактирования названия элемента
+        child.setFlags(child.flags() & ~Qt.ItemIsEditable)
         parent.addChild(child)
         return child
 
@@ -48,5 +55,7 @@ class LayerTreeWidget(QTreeWidget):
         child.setText(0, name)
         child.setText(1, description)
         child.setData(0, Qt.UserRole, {"type": "class"})
+        # Убираем возможность редактирования названия элемента
+        child.setFlags(child.flags() & ~Qt.ItemIsEditable)
         parent.addChild(child)
         return child
