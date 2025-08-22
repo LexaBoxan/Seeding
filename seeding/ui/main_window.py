@@ -684,6 +684,15 @@ class ImageEditor(QMainWindow):
                     self.graphics_scene.addItem(rect_item)
                     self.rect_items[(idx, obj_idx)] = rect_item
 
+                if obj.image_all_class:
+                    for cls_idx, cls_obj in enumerate(obj.image_all_class):
+                        if cls_obj.bbox:
+                            x1, y1, x2, y2 = cls_obj.bbox
+                            rect = QRectF(x1, y1, x2 - x1, y2 - y1)
+                            sub_item = BBoxItem(rect, cls_obj, color=Qt.red)
+                            sub_item.setEditable(False)
+                            self.graphics_scene.addItem(sub_item)
+
     def save_changes(self) -> None:
         """Пересохраняет crop-изображения после изменения рамок."""
         if not self.image_storage.images or not self.image_storage.class_object_image:
@@ -738,9 +747,21 @@ class ImageEditor(QMainWindow):
                 part_img = crop[y1:y2, x1:x2].copy()
                 class_name = self.classify_model.names.get(cls_id, str(cls_id))
 
+                if obj.bbox:
+                    gx1 = obj.bbox[0] + x1
+                    gy1 = obj.bbox[1] + y1
+                    gx2 = obj.bbox[0] + x2
+                    gy2 = obj.bbox[1] + y2
+                    global_bbox = (gx1, gy1, gx2, gy2)
+                else:
+                    global_bbox = (x1, y1, x2, y2)
+
                 obj.image_all_class = [
                     AllClassImage(
-                        class_name=class_name, confidence=conf, image=part_img
+                        class_name=class_name,
+                        confidence=conf,
+                        image=part_img,
+                        bbox=global_bbox,
                     )
                 ]
 
@@ -755,6 +776,8 @@ class ImageEditor(QMainWindow):
                             f"Уверенность: {conf:.2f}",
                         )
 
+        active_idx = getattr(self, "_active_image_index", 0)
+        self.display_image_with_boxes(active_idx)
         logger.info("classify: завершено")
 
     def create_report(self) -> None:
