@@ -6,7 +6,11 @@
   <component name="ChangeListManager">
     <list default="true" id="300734ec-daa0-4c66-b3b7-98db00b5250b" name="Changes" comment="Add files via upload">
       <changelist_data name="LexaBoxan" email="80101881+lexaboxan@users.noreply.github.com" automatic="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/TestProg/TrainYOLOseg.py" beforeDir="false" afterPath="$PROJECT_DIR$/TestProg/TrainYOLOseg.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/bestCorp.pt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/seeding/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/seeding/config.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/seeding/ui/main_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/seeding/ui/main_window.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -59,12 +63,12 @@
     &quot;assignee&quot;: &quot;LexaBoxan&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/UN-GCPDS/qt-material.git",
-    "accountId": "2075cd26-3a85-44a7-9904-6f4cd6acb5ce"
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/UN-GCPDS/qt-material.git&quot;,
+    &quot;accountId&quot;: &quot;2075cd26-3a85-44a7-9904-6f4cd6acb5ce&quot;
   }
-}]]></component>
+}</component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 5
 }</component>
@@ -88,7 +92,7 @@
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
     "git-widget-placeholder": "V2.1",
-    "last_opened_file_path": "E:/_JOB_/_Python/Seeding",
+    "last_opened_file_path": "E:/_JOB_/_Python/Seeding/results/seeding-klass12/weights",
     "node.js.detected.package.eslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
     "node.js.selected.package.tslint": "(autodetect)",
@@ -181,12 +185,13 @@
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/Seeding$image_processor.coverage" NAME="image_processor Coverage Results" MODIFIED="1755499384227" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/seeding/processing" />
-    <SUITE FILE_PATH="coverage/Seeding$TrainYOLOseg.coverage" NAME="TrainYOLOseg Coverage Results" MODIFIED="1755509542775" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/TestProg" />
-    <SUITE FILE_PATH="coverage/Seeding$main_window.coverage" NAME="main_window Результаты покрытия" MODIFIED="1752831923040" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/seeding/ui" />
+    <SUITE FILE_PATH="coverage/Seeding$TrainYOLOseg.coverage" NAME="TrainYOLOseg Coverage Results" MODIFIED="1755852547190" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/TestProg" />
     <SUITE FILE_PATH="coverage/Seeding$TestSegML.coverage" NAME="TestSegML Coverage Results" MODIFIED="1755514294044" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/TestProg" />
+    <SUITE FILE_PATH="coverage/Seeding$main_window.coverage" NAME="main_window Coverage Results" MODIFIED="1755851194702" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/seeding/ui" />
     <SUITE FILE_PATH="coverage/Seeding$SegMl.coverage" NAME="SegMl Coverage Results" MODIFIED="1755493660648" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/TestProg" />
     <SUITE FILE_PATH="coverage/Seeding$ui_main.coverage" NAME="ui_main Результаты покрытия" MODIFIED="1752740065108" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/seeding" />
-    <SUITE FILE_PATH="coverage/Seeding$main.coverage" NAME="main Coverage Results" MODIFIED="1755672048863" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/seeding" />
+    <SUITE FILE_PATH="coverage/Seeding$main.coverage" NAME="main Coverage Results" MODIFIED="1755853471311" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/seeding" />
+    <SUITE FILE_PATH="coverage/Seeding$process_pdf_and_save_crops.coverage" NAME="process_pdf_and_save_crops Coverage Results" MODIFIED="1755770855289" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/TestProg" />
     <SUITE FILE_PATH="coverage/Seeding$config.coverage" NAME="config Результаты покрытия" MODIFIED="1752835721457" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/seeding" />
   </component>
 </project>

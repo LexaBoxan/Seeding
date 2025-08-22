@@ -9,7 +9,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_WEIGHTS_PATH = Path(
     os.getenv(
         "YOLO_WEIGHTS_PATH",
-        str(PROJECT_ROOT / "results" / "exp_yolov8_custom_best11" / "weights" / "best.pt")
+        str(PROJECT_ROOT / "models" /  "bestCrop.pt")
     )
 )
 
@@ -17,7 +17,7 @@ DEFAULT_WEIGHTS_PATH = Path(
 DEFAULT_CLASSIFY_WEIGHTS_PATH = Path(
     os.getenv(
         "YOLO_CLASSIFY_WEIGHTS_PATH",
-        str(PROJECT_ROOT / "results" / "exp_yolov8_klass_5" / "weights" / "best.pt"),
+        str(PROJECT_ROOT / "models" / "bestKlass.pt"),
     )
 )
 

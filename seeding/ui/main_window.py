@@ -466,7 +466,6 @@ class ImageEditor(QMainWindow):
                 logger.warning("rotate_image: Оригинал отсутствует")
                 return
             rotated = np.rot90(image, k=ROTATE_K)
-            rotated = np.ascontiguousarray(rotated)
             self.image_storage.images[idx] = rotated
             logger.info("rotate_image: Изображение %s повернуто", idx)
             self.display_image(rotated)
@@ -480,7 +479,6 @@ class ImageEditor(QMainWindow):
                 return
             crop = obj.image[0]
             rotated = np.rot90(crop, k=ROTATE_K)
-            rotated = np.ascontiguousarray(rotated)
             self.image_storage.class_object_image[parent_idx][seed_idx].image[
                 0
             ] = rotated
@@ -568,7 +566,6 @@ class ImageEditor(QMainWindow):
                 rotation_k = 0
                 if crop.shape[1] > crop.shape[0]:
                     crop = np.rot90(crop, k=ROTATE_K)
-                    crop = np.ascontiguousarray(crop)
                     rotation_k = ROTATE_K
                 obj = ObjectImage(
                     class_name=data["class_name"],
@@ -685,18 +682,11 @@ class ImageEditor(QMainWindow):
                     x1, y1, x2, y2 = obj.bbox
                     rect = QRectF(x1, y1, x2 - x1, y2 - y1)
                     rect_item = BBoxItem(rect, obj)
-                    rect_item.setEditable(False)
+                    rect_item.setEditable(True)
                     self.graphics_scene.addItem(rect_item)
                     self.rect_items[(idx, obj_idx)] = rect_item
 
-                if obj.image_all_class:
-                    for cls_idx, cls_obj in enumerate(obj.image_all_class):
-                        if cls_obj.bbox:
-                            x1, y1, x2, y2 = cls_obj.bbox
-                            rect = QRectF(x1, y1, x2 - x1, y2 - y1)
-                            sub_item = BBoxItem(rect, cls_obj, color=Qt.red)
-                            sub_item.setEditable(False)
-                            self.graphics_scene.addItem(sub_item)
+
 
     def display_seeding_with_boxes(self, parent_idx: int, seed_idx: int) -> None:
         """Отображает crop сеянца с его классификационными боксами."""
@@ -791,7 +781,6 @@ class ImageEditor(QMainWindow):
                     crop = base_img[y1:y2, x1:x2].copy()
                     if getattr(obj, "rotation_k", 0):
                         crop = np.rot90(crop, k=obj.rotation_k)
-                        crop = np.ascontiguousarray(crop)
                     obj.image = [crop]
                 if obj.image_all_class:
                     for cls in obj.image_all_class:
@@ -800,7 +789,6 @@ class ImageEditor(QMainWindow):
                             part = base_img[y1:y2, x1:x2].copy()
                             if getattr(obj, "rotation_k", 0):
                                 part = np.rot90(part, k=obj.rotation_k)
-                                part = np.ascontiguousarray(part)
                             cls.image = part
         logger.info("save_changes: обновлённые координаты сохранены")
 
@@ -828,7 +816,6 @@ class ImageEditor(QMainWindow):
                 rotation_k = getattr(obj, "rotation_k", 0)
                 # Для корректной классификации разворачиваем изображение в исходную ориентацию
                 crop_for_model = np.rot90(crop, k=-rotation_k) if rotation_k else crop
-                crop_for_model = np.ascontiguousarray(crop_for_model)
                 try:
                     result = self.classify_model(crop_for_model)[0]
                 except Exception as e:  # pragma: no cover - логирование
@@ -849,7 +836,6 @@ class ImageEditor(QMainWindow):
                 # Возвращаем изображение части в ту ориентацию, в которой показывается сеянец
                 if rotation_k:
                     part_img = np.rot90(part_img, k=rotation_k)
-                    part_img = np.ascontiguousarray(part_img)
                 class_name = self.classify_model.names.get(cls_id, str(cls_id))
 
                 if obj.bbox:
