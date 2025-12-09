@@ -45,6 +45,7 @@ class RootAnalysisResult:
     bbox: Tuple[int, int, int, int]
     morphology: RootMorphology
     viability: RootViability
+    score: float
     confidence: float
 
 
@@ -71,13 +72,14 @@ class RootAnalyzer:
         binary_mask = self._prepare_mask(mask)
         bbox = self._get_bbox(binary_mask)
         morphology = self._compute_morphology(binary_mask)
-        viability = self._estimate_viability(morphology, confidence)
+        viability, score = self._estimate_viability(morphology, confidence)
 
         return RootAnalysisResult(
             mask=binary_mask,
             bbox=bbox,
             morphology=morphology,
             viability=viability,
+            score=score,
             confidence=float(confidence),
         )
 
@@ -164,9 +166,9 @@ class RootAnalyzer:
                 endpoints += 1
         return branches / max(endpoints, 1)
 
-    def _estimate_viability(self, morphology: RootMorphology, confidence: float) -> RootViability:
+    def _estimate_viability(self, morphology: RootMorphology, confidence: float) -> tuple[RootViability, float]:
         if morphology.length == 0 or morphology.mean_thickness == 0:
-            return RootViability.NOT_RECOGNIZED
+            return RootViability.NOT_RECOGNIZED, 0.0
 
         score = 0.0
         score += min(morphology.length / 50.0, 1.0) * 0.35
@@ -175,7 +177,7 @@ class RootAnalyzer:
         score += min(confidence, 1.0) * 0.2
 
         if score >= max(self.viability_threshold, 0.65):
-            return RootViability.VIABLE
+            return RootViability.VIABLE, score
         if score >= self.viability_threshold:
-            return RootViability.CRITICAL
-        return RootViability.NOT_RECOGNIZED
+            return RootViability.CRITICAL, score
+        return RootViability.NOT_RECOGNIZED, score

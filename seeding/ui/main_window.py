@@ -239,6 +239,14 @@ class ImageEditor(QMainWindow):
         self.root_analysis_action.triggered.connect(self.analyze_roots)
         toolbar.addAction(self.root_analysis_action)
 
+        self.root_analysis_action = QAction(
+            style.standardIcon(QStyle.SP_DialogApplyButton),
+            "Анализ корней",
+            self,
+        )
+        self.root_analysis_action.triggered.connect(self.analyze_roots)
+        toolbar.addAction(self.root_analysis_action)
+
         self.rotate_action = QAction(
             style.standardIcon(QStyle.SP_BrowserReload), "Повернуть на 90°", self
         )
@@ -1061,6 +1069,7 @@ class ImageEditor(QMainWindow):
             morphology = result.morphology
             metrics_label = QLabel(
                 (
+                    f"Оценка: {result.score:.2f}\n"
                     f"Длина: {morphology.length:.1f} px\n"
                     f"Толщина: {morphology.mean_thickness:.1f} px\n"
                     f"Ветвистость: {morphology.branching_index:.3f}\n"
@@ -1071,6 +1080,11 @@ class ImageEditor(QMainWindow):
             metrics_label.setAlignment(Qt.AlignTop | Qt.AlignLeft)
             metrics_label.setWordWrap(True)
             metrics_label.setMargin(6)
+            metrics_label.setToolTip(
+                "Оценка — итоговый взвешенный балл; длина — по периметру/размеру маски, толщина — площадь/длина,"
+                " ветвистость — узлы скелета, плотность — площадь/площадь прямоугольника, уверенность — из"
+                " модели сегментации."
+            )
             table.setCellWidget(row, 2, metrics_label)
 
         close_btn = QPushButton("Закрыть", dialog)
@@ -1094,6 +1108,17 @@ class ImageEditor(QMainWindow):
         button_layout.addWidget(close_btn)
 
         layout.addWidget(table)
+
+        hint_label = QLabel(
+            "Показатели считаются по бинарной маске корня: длина — по габаритам/периметру контура,\n"
+            "средняя толщина — как отношение площади маски к длине, ветвистость — по числу узлов скелета,\n"
+            "плотность — как доля площади маски в ограничивающем прямоугольнике, уверенность — из модели сегментации."
+        )
+        hint_label.setWordWrap(True)
+        hint_label.setMargin(4)
+        hint_label.setStyleSheet("color: #444; font-size: 11px;")
+
+        layout.addWidget(hint_label)
         layout.addLayout(button_layout)
         dialog.exec_()
 
