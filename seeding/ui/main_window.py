@@ -30,6 +30,7 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QWidget,
     QDialog,
+    QHBoxLayout,
 )
 from ultralytics import YOLO
 
@@ -221,6 +222,14 @@ class ImageEditor(QMainWindow):
         )
         self.classify_action.triggered.connect(self.classify)
         toolbar.addAction(self.classify_action)
+
+        self.root_analysis_action = QAction(
+            style.standardIcon(QStyle.SP_DialogApplyButton),
+            "Анализ корней",
+            self,
+        )
+        self.root_analysis_action.triggered.connect(self.analyze_roots)
+        toolbar.addAction(self.root_analysis_action)
 
         self.root_analysis_action = QAction(
             style.standardIcon(QStyle.SP_DialogApplyButton),
@@ -992,7 +1001,7 @@ class ImageEditor(QMainWindow):
         return mask
 
     @staticmethod
-    def _array_to_qpixmap(image: np.ndarray, max_width: int = 180) -> QPixmap | None:
+    def _array_to_qpixmap(image: np.ndarray, max_size: int = 220) -> QPixmap | None:
         if image is None or not isinstance(image, np.ndarray):
             return None
         if image.ndim == 3 and image.shape[2] == 3:
@@ -1006,7 +1015,7 @@ class ImageEditor(QMainWindow):
         else:
             return None
         pixmap = QPixmap.fromImage(q_image)
-        return pixmap.scaledToWidth(max_width, Qt.SmoothTransformation)
+        return pixmap.scaled(max_size, max_size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
     def _show_root_report(
         self, summary: list[tuple[int, int, ObjectImage, RootAnalysisResult]]
@@ -1026,14 +1035,17 @@ class ImageEditor(QMainWindow):
         table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
         table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
         table.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
+        table.verticalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
 
         for row, (img_idx, obj_idx, obj, result) in enumerate(summary):
-            pixmap = self._array_to_qpixmap(obj.image[0], max_width=140)
+            pixmap = self._array_to_qpixmap(obj.image[0], max_size=260)
             label = QLabel(f"Страница {img_idx + 1}, сеянец {obj_idx + 1}")
             label.setAlignment(Qt.AlignCenter)
+            label.setMargin(6)
             if pixmap:
                 label.setPixmap(pixmap)
                 label.setMinimumSize(pixmap.size())
+                label.setMaximumSize(pixmap.size())
             table.setCellWidget(row, 0, label)
 
             viability_item = QTableWidgetItem(result.viability.value)
@@ -1061,14 +1073,28 @@ class ImageEditor(QMainWindow):
             metrics_label.setMargin(6)
             table.setCellWidget(row, 2, metrics_label)
 
-            row_height = max(metrics_label.sizeHint().height() + 12, pixmap.height() if pixmap else 80)
-            table.setRowHeight(row, min(row_height, 380))
-
         close_btn = QPushButton("Закрыть", dialog)
         close_btn.clicked.connect(dialog.accept)
 
+        expand_btn = QPushButton("Развернуть", dialog)
+
+        def toggle_expand():
+            if dialog.isMaximized():
+                dialog.showNormal()
+                expand_btn.setText("Развернуть")
+            else:
+                dialog.showMaximized()
+                expand_btn.setText("В окно")
+
+        expand_btn.clicked.connect(toggle_expand)
+
+        button_layout = QHBoxLayout()
+        button_layout.addWidget(expand_btn)
+        button_layout.addStretch(1)
+        button_layout.addWidget(close_btn)
+
         layout.addWidget(table)
-        layout.addWidget(close_btn, alignment=Qt.AlignRight)
+        layout.addLayout(button_layout)
         dialog.exec_()
 
     def create_report(self) -> None:
