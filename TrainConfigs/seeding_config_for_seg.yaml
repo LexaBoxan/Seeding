@@ -1,0 +1,62 @@
+task: segment
+mode: train
+model: E:\_JOB_\_Python\Seeding\models\yolov8m-seg.pt
+data: E:\_JOB_\_Python\Seeding\dataset\datasetSegV6\data.yaml
+
+epochs: 150
+patience: 50
+batch: 2               # для RTX 3050 — максимально безопасно
+imgsz: 1024              # лучший баланс, можно 1280 если VRAM мало
+device: 0
+workers: 0
+cache: true
+
+optimizer: AdamW
+lr0: 0.0002
+lrf: 0.0005
+momentum: 0.937
+weight_decay: 0.02
+
+# ---- Улучшенная стабильность ----
+pretrained: true
+deterministic: false      # лучше OFF для сегментации
+rect: false               # важно! сегментации нужен квадратный резайз
+cos_lr: true
+
+# ---- AUG Только минимум ----
+mosaic: 0.0
+mixup: 0.0
+cutmix: 0.0
+copy_paste: 0.0
+flipud: 0.0
+fliplr: 0.3
+
+degrees: 2.0             # больше нельзя (искажает корни)
+scale: 0.1
+translate: 0.05
+shear: 0.0
+perspective: 0.0
+
+# ---- SEG настройки ----
+overlap_mask: true
+mask_ratio: 2            # **лучше**, чем 4 — меньше искажает тонкие маски
+dropout: 0.0
+retina_masks: true       # сильно улучшает мелкие маски!
+
+# ---- Заморожено ----
+close_mosaic: 0
+multi_scale: false
+
+# ---- Loss ----
+box: 7.0
+cls: 0.5
+dfl: 1.5
+
+save: true
+plots: true
+val: true
+save_period: 20
+exist_ok: false
+
+project: E:\_JOB_\_Python\Seeding\results
+name: seeding-seg-optimized

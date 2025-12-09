@@ -5,12 +5,315 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="300734ec-daa0-4c66-b3b7-98db00b5250b" name="Changes" comment="Add files via upload">
-      <changelist_data name="LexaBoxan" email="80101881+lexaboxan@users.noreply.github.com" automatic="false" />
+      <change afterPath="$PROJECT_DIR$/TestProg/TestYOLO10seg.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TestProg/effekt.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TestProg/shuffle.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TrainConfigs/seeding_config.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TrainConfigs/seeding_config_for_seg.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TrainConfigs/seeding_config_old.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/img.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/testRun.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p1_obj10_Seeding_0.76.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p1_obj11_Seeding_0.75.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p1_obj12_Seeding_0.75.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p1_obj13_Seeding_0.73.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p1_obj14_Seeding_0.69.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p1_obj15_Seeding_0.43.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p1_obj16_Seeding_0.42.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p1_obj1_Seeding_0.84.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p1_obj2_Seeding_0.83.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p1_obj3_Seeding_0.81.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p1_obj4_Seeding_0.80.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p1_obj5_Seeding_0.80.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p1_obj6_Seeding_0.79.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p1_obj7_Seeding_0.79.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p1_obj8_Seeding_0.77.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p1_obj9_Seeding_0.77.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p2_obj10_Seeding_0.69.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p2_obj11_Seeding_0.55.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p2_obj1_Seeding_0.87.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p2_obj2_Seeding_0.84.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p2_obj3_Seeding_0.84.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p2_obj4_Seeding_0.83.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p2_obj5_Seeding_0.82.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p2_obj6_Seeding_0.81.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p2_obj7_Seeding_0.78.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p2_obj8_Seeding_0.78.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p2_obj9_Seeding_0.72.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p3_obj10_Seeding_0.79.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p3_obj11_Seeding_0.76.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p3_obj12_Seeding_0.76.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p3_obj13_Seeding_0.76.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p3_obj14_Seeding_0.74.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p3_obj15_Seeding_0.68.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p3_obj16_Seeding_0.66.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p3_obj17_Seeding_0.48.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p3_obj1_Seeding_0.87.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p3_obj2_Seeding_0.86.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p3_obj3_Seeding_0.86.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p3_obj4_Seeding_0.85.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p3_obj5_Seeding_0.84.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p3_obj6_Seeding_0.84.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p3_obj7_Seeding_0.83.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p3_obj8_Seeding_0.83.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p3_obj9_Seeding_0.81.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p4_obj10_Seeding_0.78.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p4_obj11_Seeding_0.77.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p4_obj12_Seeding_0.76.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p4_obj13_Seeding_0.76.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p4_obj14_Seeding_0.76.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p4_obj15_Seeding_0.73.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p4_obj16_Seeding_0.73.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p4_obj17_Seeding_0.72.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p4_obj18_Seeding_0.71.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p4_obj19_Seeding_0.70.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p4_obj1_Seeding_0.88.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p4_obj20_Seeding_0.70.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p4_obj21_Seeding_0.65.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p4_obj22_Seeding_0.63.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p4_obj23_Seeding_0.62.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p4_obj24_Seeding_0.58.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p4_obj25_Seeding_0.56.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p4_obj26_Seeding_0.51.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p4_obj2_Seeding_0.88.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p4_obj3_Seeding_0.87.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p4_obj4_Seeding_0.84.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p4_obj5_Seeding_0.82.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p4_obj6_Seeding_0.80.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p4_obj7_Seeding_0.79.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p4_obj8_Seeding_0.78.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p4_obj9_Seeding_0.78.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p5_obj10_Seeding_0.82.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p5_obj11_Seeding_0.81.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p5_obj12_Seeding_0.80.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p5_obj13_Seeding_0.80.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p5_obj14_Seeding_0.78.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p5_obj15_Seeding_0.76.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p5_obj16_Seeding_0.76.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p5_obj17_Seeding_0.76.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p5_obj18_Seeding_0.72.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p5_obj19_Seeding_0.69.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p5_obj1_Seeding_0.97.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p5_obj20_Seeding_0.68.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p5_obj21_Seeding_0.68.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p5_obj22_Seeding_0.64.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p5_obj23_Seeding_0.63.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p5_obj24_Seeding_0.62.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p5_obj25_Seeding_0.58.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p5_obj26_Seeding_0.58.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p5_obj27_Seeding_0.55.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p5_obj28_Seeding_0.43.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p5_obj2_Seeding_0.88.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p5_obj3_Seeding_0.88.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p5_obj4_Seeding_0.87.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p5_obj5_Seeding_0.85.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p5_obj6_Seeding_0.85.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p5_obj7_Seeding_0.84.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p5_obj8_Seeding_0.84.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p5_obj9_Seeding_0.83.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p6_obj10_Seeding_0.79.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p6_obj11_Seeding_0.79.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p6_obj12_Seeding_0.79.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p6_obj13_Seeding_0.78.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p6_obj14_Seeding_0.78.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p6_obj15_Seeding_0.77.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p6_obj16_Seeding_0.73.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p6_obj17_Seeding_0.56.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p6_obj18_Seeding_0.35.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p6_obj1_Seeding_0.89.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p6_obj2_Seeding_0.87.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p6_obj3_Seeding_0.85.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p6_obj4_Seeding_0.82.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p6_obj5_Seeding_0.81.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p6_obj6_Seeding_0.81.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p6_obj7_Seeding_0.81.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p6_obj8_Seeding_0.79.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p6_obj9_Seeding_0.79.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p7_obj10_Seeding_0.73.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p7_obj11_Seeding_0.73.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p7_obj12_Seeding_0.69.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p7_obj13_Seeding_0.68.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p7_obj14_Seeding_0.65.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p7_obj15_Seeding_0.65.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p7_obj16_Seeding_0.63.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p7_obj17_Seeding_0.63.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p7_obj18_Seeding_0.47.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p7_obj1_Seeding_0.89.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p7_obj2_Seeding_0.87.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p7_obj3_Seeding_0.85.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p7_obj4_Seeding_0.85.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p7_obj5_Seeding_0.84.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p7_obj6_Seeding_0.81.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p7_obj7_Seeding_0.81.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p7_obj8_Seeding_0.80.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p7_obj9_Seeding_0.77.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p8_obj10_Seeding_0.79.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p8_obj11_Seeding_0.76.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p8_obj12_Seeding_0.75.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p8_obj13_Seeding_0.74.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p8_obj14_Seeding_0.74.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p8_obj15_Seeding_0.73.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p8_obj16_Seeding_0.72.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p8_obj17_Seeding_0.71.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p8_obj18_Seeding_0.71.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p8_obj19_Seeding_0.70.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p8_obj1_Seeding_0.91.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p8_obj20_Seeding_0.70.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p8_obj21_Seeding_0.68.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p8_obj22_Seeding_0.63.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p8_obj23_Seeding_0.62.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p8_obj24_Seeding_0.61.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p8_obj25_Seeding_0.57.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p8_obj26_Seeding_0.54.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p8_obj27_Seeding_0.53.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p8_obj28_Seeding_0.50.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p8_obj29_Seeding_0.29.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p8_obj2_Seeding_0.89.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p8_obj3_Seeding_0.89.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p8_obj4_Seeding_0.86.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p8_obj5_Seeding_0.85.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p8_obj6_Seeding_0.84.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p8_obj7_Seeding_0.82.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p8_obj8_Seeding_0.81.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p8_obj9_Seeding_0.79.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p9_obj10_Seeding_0.72.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p9_obj11_Seeding_0.70.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p9_obj12_Seeding_0.67.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p9_obj13_Seeding_0.62.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p9_obj1_Seeding_0.90.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p9_obj2_Seeding_0.89.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p9_obj3_Seeding_0.86.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p9_obj4_Seeding_0.82.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p9_obj5_Seeding_0.80.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p9_obj6_Seeding_0.77.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p9_obj7_Seeding_0.76.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p9_obj8_Seeding_0.75.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak1_p9_obj9_Seeding_0.75.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p10_obj1_Seeding_0.92.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p10_obj2_Seeding_0.90.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p10_obj3_Seeding_0.88.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p10_obj4_Seeding_0.88.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p11_obj1_Seeding_0.91.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p11_obj2_Seeding_0.90.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p11_obj3_Seeding_0.85.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p11_obj4_Seeding_0.84.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p12_obj1_Seeding_0.93.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p12_obj2_Seeding_0.92.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p12_obj3_Seeding_0.91.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p12_obj4_Seeding_0.90.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p12_obj5_Seeding_0.87.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p13_obj1_Seeding_0.91.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p13_obj2_Seeding_0.90.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p13_obj3_Seeding_0.89.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p13_obj4_Seeding_0.89.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p14_obj1_Seeding_0.93.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p14_obj2_Seeding_0.92.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p14_obj3_Seeding_0.89.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p14_obj4_Seeding_0.89.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p14_obj5_Seeding_0.89.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p15_obj1_Seeding_0.94.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p15_obj2_Seeding_0.91.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p15_obj3_Seeding_0.90.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p15_obj4_Seeding_0.90.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p15_obj5_Seeding_0.90.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p16_obj1_Seeding_0.91.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p16_obj2_Seeding_0.90.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p16_obj3_Seeding_0.89.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p16_obj4_Seeding_0.89.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p16_obj5_Seeding_0.87.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p17_obj1_Seeding_0.93.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p17_obj2_Seeding_0.92.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p17_obj3_Seeding_0.91.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p17_obj4_Seeding_0.91.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p17_obj5_Seeding_0.91.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p17_obj6_Seeding_0.88.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p18_obj1_Seeding_0.92.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p18_obj2_Seeding_0.91.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p18_obj3_Seeding_0.89.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p18_obj4_Seeding_0.89.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p18_obj5_Seeding_0.88.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p1_obj1_Seeding_0.91.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p1_obj2_Seeding_0.89.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p1_obj3_Seeding_0.89.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p2_obj1_Seeding_0.93.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p2_obj2_Seeding_0.91.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p2_obj3_Seeding_0.90.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p3_obj1_Seeding_0.92.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p3_obj2_Seeding_0.92.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p3_obj3_Seeding_0.77.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p3_obj4_Seeding_0.44.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p4_obj1_Seeding_0.95.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p4_obj2_Seeding_0.94.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p4_obj3_Seeding_0.93.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p5_obj1_Seeding_0.92.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p5_obj2_Seeding_0.91.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p5_obj3_Seeding_0.90.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p6_obj1_Seeding_0.95.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p6_obj2_Seeding_0.93.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p6_obj3_Seeding_0.92.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p7_obj1_Seeding_0.91.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p7_obj2_Seeding_0.89.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p7_obj3_Seeding_0.88.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p8_obj1_Seeding_0.93.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p8_obj2_Seeding_0.92.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p8_obj3_Seeding_0.87.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p9_obj1_Seeding_0.88.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p9_obj2_Seeding_0.88.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p9_obj3_Seeding_0.88.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak2_p9_obj4_Seeding_0.87.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak3_p10_obj1_Seeding_0.95.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak3_p10_obj2_Seeding_0.92.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak3_p10_obj3_Seeding_0.91.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak3_p11_obj1_Seeding_0.95.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak3_p11_obj2_Seeding_0.95.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak3_p11_obj3_Seeding_0.94.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak3_p11_obj4_Seeding_0.91.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak3_p1_obj1_Seeding_0.83.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak3_p1_obj2_Seeding_0.78.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak3_p1_obj3_Seeding_0.76.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak3_p2_obj1_Seeding_0.93.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak3_p2_obj2_Seeding_0.92.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak3_p2_obj3_Seeding_0.91.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak3_p2_obj4_Seeding_0.90.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak3_p2_obj5_Seeding_0.89.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak3_p2_obj6_Seeding_0.88.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak3_p3_obj1_Seeding_0.91.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak3_p3_obj2_Seeding_0.90.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak3_p3_obj3_Seeding_0.90.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak3_p3_obj4_Seeding_0.86.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak3_p3_obj5_Seeding_0.84.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak3_p4_obj1_Seeding_0.93.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak3_p4_obj2_Seeding_0.91.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak3_p4_obj3_Seeding_0.90.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak3_p4_obj4_Seeding_0.89.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak3_p4_obj5_Seeding_0.85.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak3_p5_obj1_Seeding_0.93.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak3_p5_obj2_Seeding_0.92.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak3_p5_obj3_Seeding_0.89.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak3_p5_obj4_Seeding_0.85.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak3_p6_obj1_Seeding_0.89.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak3_p6_obj2_Seeding_0.79.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak3_p6_obj3_Seeding_0.75.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak3_p7_obj1_Seeding_0.89.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak3_p7_obj2_Seeding_0.87.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak3_p7_obj3_Seeding_0.78.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak3_p7_obj4_Seeding_0.67.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak3_p8_obj1_Seeding_0.94.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak3_p8_obj2_Seeding_0.91.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak3_p8_obj3_Seeding_0.89.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak3_p8_obj4_Seeding_0.81.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak3_p9_obj1_Seeding_0.94.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak3_p9_obj2_Seeding_0.93.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak3_p9_obj3_Seeding_0.92.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Photo/Pak1_crops/Pak3_p9_obj4_Seeding_0.88.png" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/TestProg/TrainYOLOseg.py" beforeDir="false" afterPath="$PROJECT_DIR$/TestProg/TrainYOLOseg.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/models/bestCorp.pt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/TestProg/process_pdf_and_save_crops.py" beforeDir="false" afterPath="$PROJECT_DIR$/TestProg/process_pdf_and_save_crops.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dataset/datasetSegV3/train/labels.cache" beforeDir="false" afterPath="$PROJECT_DIR$/dataset/datasetSegV3/train/labels.cache" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dataset/datasetSegV3/valid/labels.cache" beforeDir="false" afterPath="$PROJECT_DIR$/dataset/datasetSegV3/valid/labels.cache" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/yolov8l.pt" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/seeding/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/seeding/config.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/seeding/ui/main_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/seeding/ui/main_window.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -22,6 +325,17 @@
       <list>
         <option value="Python Script" />
       </list>
+    </option>
+  </component>
+  <component name="FlaskConsoleOptions" custom-start-script="import sys; print('Python %s on %s' % (sys.version, sys.platform)); sys.path.extend([WORKING_DIR_AND_PYTHON_PATHS])&#10;from flask.cli import ScriptInfo, NoAppException&#10;for module in [&quot;main.py&quot;, &quot;wsgi.py&quot;, &quot;app.py&quot;]:&#10;    try: locals().update(ScriptInfo(app_import_path=module, create_app=None).load_app().make_shell_context()); print(&quot;\nFlask App: %s&quot; % app.import_name); break&#10;    except NoAppException: pass">
+    <envs>
+      <env key="FLASK_APP" value="app" />
+    </envs>
+    <option name="myCustomStartScript" value="import sys; print('Python %s on %s' % (sys.version, sys.platform)); sys.path.extend([WORKING_DIR_AND_PYTHON_PATHS])&#10;from flask.cli import ScriptInfo, NoAppException&#10;for module in [&quot;main.py&quot;, &quot;wsgi.py&quot;, &quot;app.py&quot;]:&#10;    try: locals().update(ScriptInfo(app_import_path=module, create_app=None).load_app().make_shell_context()); print(&quot;\nFlask App: %s&quot; % app.import_name); break&#10;    except NoAppException: pass" />
+    <option name="myEnvs">
+      <map>
+        <entry key="FLASK_APP" value="app" />
+      </map>
     </option>
   </component>
   <component name="Git.Settings">
@@ -51,10 +365,11 @@
     </option>
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
-        <entry key="$PROJECT_DIR$" value="TestV1.6" />
+        <entry key="$PROJECT_DIR$" value="V2.1" />
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+    <option name="RESET_MODE" value="MIXED" />
     <option name="ROOT_SYNC" value="DONT_SYNC" />
   </component>
   <component name="GitHubPullRequestSearchHistory">{
@@ -83,21 +398,26 @@
     "ASKED_MARK_IGNORED_FILES_AS_EXCLUDED": "true",
     "Python.SegMl.executor": "Run",
     "Python.TestSegML.executor": "Run",
+    "Python.TestYOLO10seg.executor": "Run",
     "Python.TrainYOLOseg.executor": "Run",
     "Python.config.executor": "Run",
+    "Python.effekt.executor": "Run",
     "Python.image_processor.executor": "Run",
     "Python.main.executor": "Run",
     "Python.main_window.executor": "Run",
+    "Python.process_pdf_and_save_crops.executor": "Run",
+    "Python.sam_folder_annotator.executor": "Run",
+    "Python.shuffle.executor": "Run",
     "Python.ui_main.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "V2.1",
-    "last_opened_file_path": "E:/_JOB_/_Python/Seeding/results/seeding-klass12/weights",
+    "git-widget-placeholder": "V3.1",
+    "last_opened_file_path": "E:/_BYZ_/4_Kyrs/TestPO/LabsAll",
     "node.js.detected.package.eslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "preferences.pluginManager",
+    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable",
     "two.files.diff.last.used.file": "E:/_JOB_/_Python/Seeding/README.md",
     "two.files.diff.last.used.folder": "E:/_JOB_/_Python/SeedingV1.1",
     "vue.rearranger.settings.migration": "true"
@@ -110,13 +430,14 @@
   </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
-      <recent name="E:\_JOB_\_Python\Seeding" />
-      <recent name="E:\_JOB_\_Python\Seeding\Photo" />
       <recent name="E:\_JOB_\_Python\Seeding\models" />
-      <recent name="E:\_JOB_\_Python" />
-      <recent name="E:\_JOB_\_Python\Seeding\results" />
+      <recent name="E:\_JOB_\_Python\Seeding\TrainConfigs" />
+      <recent name="E:\_JOB_\_Python\Seeding\TestProg" />
+      <recent name="E:\_JOB_\_Python\Seeding\results\seeding-klass12\weights" />
+      <recent name="E:\_JOB_\_Python\Seeding" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="E:\_JOB_\_Python\Seeding\models" />
       <recent name="E:\_JOB_\_Python\Seeding" />
       <recent name="E:\_JOB_\_Python\Seeding\TestProg" />
     </key>
@@ -150,7 +471,34 @@
       <workItem from="1755429791771" duration="184000" />
       <workItem from="1755429988831" duration="1007000" />
       <workItem from="1755431110931" duration="32008000" />
+      <workItem from="1756716896423" duration="51000" />
+      <workItem from="1756721361892" duration="2676000" />
+      <workItem from="1757390842805" duration="1368000" />
+      <workItem from="1757400022652" duration="117000" />
+      <workItem from="1757478964199" duration="1821000" />
+      <workItem from="1758448861976" duration="137000" />
+      <workItem from="1759857410579" duration="468000" />
+      <workItem from="1759858008111" duration="71000" />
+      <workItem from="1759858101728" duration="294000" />
+      <workItem from="1759858760506" duration="223000" />
+      <workItem from="1762409156905" duration="1878000" />
+      <workItem from="1764059679529" duration="302000" />
+      <workItem from="1764076797888" duration="14276000" />
+      <workItem from="1764126012704" duration="5561000" />
+      <workItem from="1764150767488" duration="12000000" />
+      <workItem from="1764172616557" duration="10590000" />
+      <workItem from="1764224143897" duration="16862000" />
+      <workItem from="1764657387191" duration="25000" />
     </task>
+    <task id="LOCAL-00001" summary="Add files via upload">
+      <option name="closed" value="true" />
+      <created>1755853496539</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1755853496539</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -161,19 +509,7 @@
       <map>
         <entry key="MAIN">
           <value>
-            <State>
-              <option name="FILTERS">
-                <map>
-                  <entry key="branch">
-                    <value>
-                      <list>
-                        <option value="origin/g2hndt-codex/conduct-code-review-and-refactor-python-project" />
-                      </list>
-                    </value>
-                  </entry>
-                </map>
-              </option>
-            </State>
+            <State />
           </value>
         </entry>
       </map>
@@ -185,13 +521,17 @@
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/Seeding$image_processor.coverage" NAME="image_processor Coverage Results" MODIFIED="1755499384227" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/seeding/processing" />
-    <SUITE FILE_PATH="coverage/Seeding$TrainYOLOseg.coverage" NAME="TrainYOLOseg Coverage Results" MODIFIED="1755852547190" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/TestProg" />
+    <SUITE FILE_PATH="coverage/Seeding$sam_folder_annotator.coverage" NAME="sam_folder_annotator Coverage Results" MODIFIED="1764093276831" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/TestProg" />
+    <SUITE FILE_PATH="coverage/Seeding$shuffle.coverage" NAME="shuffle Coverage Results" MODIFIED="1764256181179" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/TestProg" />
+    <SUITE FILE_PATH="coverage/Seeding$main.coverage" NAME="main Coverage Results" MODIFIED="1764267544399" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/seeding" />
+    <SUITE FILE_PATH="coverage/Seeding$process_pdf_and_save_crops.coverage" NAME="process_pdf_and_save_crops Coverage Results" MODIFIED="1764223841140" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/TestProg" />
+    <SUITE FILE_PATH="coverage/Seeding$config.coverage" NAME="config Результаты покрытия" MODIFIED="1752835721457" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/seeding" />
+    <SUITE FILE_PATH="coverage/Seeding$TrainYOLOseg.coverage" NAME="TrainYOLOseg Coverage Results" MODIFIED="1764256993853" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/TestProg" />
+    <SUITE FILE_PATH="coverage/Seeding$effekt.coverage" NAME="effekt Coverage Results" MODIFIED="1764241045898" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/TestProg" />
+    <SUITE FILE_PATH="coverage/Seeding$TestYOLO10seg.coverage" NAME="TestYOLO10seg Coverage Results" MODIFIED="1764091130004" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/TestProg" />
     <SUITE FILE_PATH="coverage/Seeding$TestSegML.coverage" NAME="TestSegML Coverage Results" MODIFIED="1755514294044" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/TestProg" />
     <SUITE FILE_PATH="coverage/Seeding$main_window.coverage" NAME="main_window Coverage Results" MODIFIED="1755851194702" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/seeding/ui" />
     <SUITE FILE_PATH="coverage/Seeding$SegMl.coverage" NAME="SegMl Coverage Results" MODIFIED="1755493660648" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/TestProg" />
     <SUITE FILE_PATH="coverage/Seeding$ui_main.coverage" NAME="ui_main Результаты покрытия" MODIFIED="1752740065108" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/seeding" />
-    <SUITE FILE_PATH="coverage/Seeding$main.coverage" NAME="main Coverage Results" MODIFIED="1755853471311" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/seeding" />
-    <SUITE FILE_PATH="coverage/Seeding$process_pdf_and_save_crops.coverage" NAME="process_pdf_and_save_crops Coverage Results" MODIFIED="1755770855289" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/TestProg" />
-    <SUITE FILE_PATH="coverage/Seeding$config.coverage" NAME="config Результаты покрытия" MODIFIED="1752835721457" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/seeding" />
   </component>
 </project>

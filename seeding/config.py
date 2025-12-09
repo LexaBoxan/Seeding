@@ -17,7 +17,7 @@ DEFAULT_WEIGHTS_PATH = Path(
 DEFAULT_CLASSIFY_WEIGHTS_PATH = Path(
     os.getenv(
         "YOLO_CLASSIFY_WEIGHTS_PATH",
-        str(PROJECT_ROOT / "models" / "bestKlass.pt"),
+        str(PROJECT_ROOT / "models" / "bestKlassSeg.pt"),
     )
 )
 

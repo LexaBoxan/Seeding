@@ -18,10 +18,10 @@ from PIL import Image  # используем PIL для корректного 
 # ===================== НАСТРОЙКИ =====================
 
 PDF_PATH = Path(r"E:\_JOB_\_Python\Seeding\Photo\Pak3.pdf")
-OUTPUT_DIR = Path(r"E:\_JOB_\_Python\Seeding\Photo\Pak1_crops")
+OUTPUT_DIR = Path(r"E:\_JOB_\_Python\Seeding\Photo\Pak3_crops")
 
 # Ваши веса YOLO. Если оставить None — возьмём yolov8n.pt
-WEIGHTS_PATH = Path(r"E:\_JOB_\_Python\Seeding\models\bestCorp.pt")
+WEIGHTS_PATH = Path(r"E:\_JOB_\_Python\Seeding\models\bestCrop.pt")
 
 SCALE = 2.0      # во сколько раз увеличить рендер (ширину/высоту)
 CONF = 0.25      # порог уверенности YOLO
