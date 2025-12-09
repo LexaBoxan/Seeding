@@ -2,8 +2,11 @@
 
 from dataclasses import dataclass, field
 from typing import List, Optional, Union
+
 import numpy as np
 from PIL import Image
+
+from seeding.application.root_analysis import RootAnalysisResult
 
 
 @dataclass
@@ -41,6 +44,7 @@ class ObjectImage:
     image_all_class: Optional[List[AllClassImage]] = None
     bbox: tuple = None  # (x1, y1, x2, y2)
     rotation_k: int = 0  # Поворот, применённый к crop (значение k для np.rot90)
+    root_analysis: Optional[List[RootAnalysisResult]] = None
 
 
 @dataclass
@@ -60,4 +64,5 @@ class OriginalImage:
     images: List[Union[np.ndarray, Image.Image]] = field(default_factory=list)
     masks: List[Union[np.ndarray, Image.Image]] = field(default_factory=list)
     final_images: List[Union[np.ndarray, Image.Image]] = field(default_factory=list)
-    class_object_image: Optional[List[ObjectImage]] = None
+    # Для каждого исходного изображения хранится список объектов (сеянцев)
+    class_object_image: Optional[List[List[ObjectImage]]] = None

@@ -1,6 +1,21 @@
 """Пакет `seeding` с графическим приложением для работы с изображениями."""
 
-__all__ = ["main"]
+from seeding.application import (  # noqa: F401  - упрощаем доступ к конвейеру
+    RootAnalyzer,
+    RootAnalysisResult,
+    RootMorphology,
+    RootViability,
+    SeedlingPipeline,
+)
+
+__all__ = [
+    "main",
+    "RootAnalyzer",
+    "RootAnalysisResult",
+    "RootMorphology",
+    "RootViability",
+    "SeedlingPipeline",
+]
 
 
 def main() -> None:
