@@ -1013,16 +1013,22 @@ class ImageEditor(QMainWindow):
     ) -> None:
         dialog = QDialog(self)
         dialog.setWindowTitle("Отчёт по корневой системе")
+        dialog.setMinimumSize(1000, 600)
+        dialog.resize(1200, 750)
+        dialog.setSizeGripEnabled(True)
 
         layout = QVBoxLayout(dialog)
         table = QTableWidget(len(summary), 3, dialog)
+        table.setAlternatingRowColors(True)
+        table.setWordWrap(True)
+        table.verticalHeader().setVisible(False)
         table.setHorizontalHeaderLabels(["Сеянец", "Жизнеспособность", "Показатели"])
         table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
         table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
         table.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
 
         for row, (img_idx, obj_idx, obj, result) in enumerate(summary):
-            pixmap = self._array_to_qpixmap(obj.image[0])
+            pixmap = self._array_to_qpixmap(obj.image[0], max_width=140)
             label = QLabel(f"Страница {img_idx + 1}, сеянец {obj_idx + 1}")
             label.setAlignment(Qt.AlignCenter)
             if pixmap:
@@ -1031,6 +1037,7 @@ class ImageEditor(QMainWindow):
             table.setCellWidget(row, 0, label)
 
             viability_item = QTableWidgetItem(result.viability.value)
+            viability_item.setTextAlignment(Qt.AlignCenter)
             if result.viability == RootViability.VIABLE:
                 viability_item.setBackground(QColor(200, 255, 200))
             elif result.viability == RootViability.CRITICAL:
@@ -1040,21 +1047,28 @@ class ImageEditor(QMainWindow):
             table.setItem(row, 1, viability_item)
 
             morphology = result.morphology
-            metrics_text = (
-                f"Длина: {morphology.length} px\n"
-                f"Толщина: {morphology.mean_thickness} px\n"
-                f"Ветвистость: {morphology.branching_index}\n"
-                f"Плотность: {morphology.density}"
+            metrics_label = QLabel(
+                (
+                    f"Длина: {morphology.length:.1f} px\n"
+                    f"Толщина: {morphology.mean_thickness:.1f} px\n"
+                    f"Ветвистость: {morphology.branching_index:.3f}\n"
+                    f"Плотность: {morphology.density:.3f}\n"
+                    f"Уверенность модели: {result.confidence:.2f}"
+                )
             )
-            table.setItem(row, 2, QTableWidgetItem(metrics_text))
-            table.setRowHeight(row, max(120, pixmap.height() if pixmap else 80))
+            metrics_label.setAlignment(Qt.AlignTop | Qt.AlignLeft)
+            metrics_label.setWordWrap(True)
+            metrics_label.setMargin(6)
+            table.setCellWidget(row, 2, metrics_label)
+
+            row_height = max(metrics_label.sizeHint().height() + 12, pixmap.height() if pixmap else 80)
+            table.setRowHeight(row, min(row_height, 380))
 
         close_btn = QPushButton("Закрыть", dialog)
         close_btn.clicked.connect(dialog.accept)
 
         layout.addWidget(table)
         layout.addWidget(close_btn, alignment=Qt.AlignRight)
-        dialog.resize(850, 400)
         dialog.exec_()
 
     def create_report(self) -> None:
