@@ -7,7 +7,7 @@ import cv2
 import fitz
 import numpy as np
 from PyQt5.QtCore import QPoint, Qt, QThread, pyqtSignal, QRectF
-from PyQt5.QtGui import QIcon, QImage, QPixmap, QTransform
+from PyQt5.QtGui import QIcon, QImage, QPixmap, QTransform, QColor
 
 from PyQt5.QtWidgets import (
     QAction,
@@ -16,20 +16,32 @@ from PyQt5.QtWidgets import (
     QGraphicsPixmapItem,
     QGraphicsScene,
     QGraphicsView,
+    QHeaderView,
+    QLabel,
     QMainWindow,
+    QProgressBar,
+    QPushButton,
     QScrollArea,
     QSplitter,
     QStyle,
+    QTableWidget,
+    QTableWidgetItem,
     QToolBar,
-    QProgressBar,
     QVBoxLayout,
     QWidget,
+    QDialog,
+    QHBoxLayout,
 )
 from ultralytics import YOLO
 
 from seeding.config import ROTATE_K, DEFAULT_CLASSIFY_WEIGHTS_PATH
 from seeding.models.data_models import AllClassImage, ObjectImage, OriginalImage
 from seeding.utils import simple_nms, rotate_bbox
+from seeding.application.root_analysis import (
+    RootAnalyzer,
+    RootAnalysisResult,
+    RootViability,
+)
 from .tree_widget import LayerTreeWidget
 from .bbox_item import BBoxItem
 
@@ -125,6 +137,7 @@ class ImageEditor(QMainWindow):
         self.weights_path = weights_path
         self.model = YOLO(weights_path)
         self.classify_model = None
+        self.root_analyzer = RootAnalyzer()
 
         self.init_ui()
 
@@ -152,6 +165,7 @@ class ImageEditor(QMainWindow):
     def _update_action_states(self) -> None:
         """Включает или отключает действия, зависящие от наличия изображения."""
         has_image = bool(self.image_storage.images)
+        has_classes = self._has_classified_parts()
         for action in (
             self.rotate_action,
             self.seedlings_action,
@@ -161,6 +175,17 @@ class ImageEditor(QMainWindow):
             self.save_action,
         ):
             action.setEnabled(has_image)
+        if hasattr(self, "root_analysis_action"):
+            self.root_analysis_action.setEnabled(has_image and has_classes)
+
+    def _has_classified_parts(self) -> bool:
+        if not self.image_storage.class_object_image:
+            return False
+        for objects in self.image_storage.class_object_image:
+            for obj in objects:
+                if obj.image_all_class:
+                    return True
+        return False
 
     def create_toolbars(self):
         """Создаёт боковую панель инструментов."""
@@ -197,6 +222,14 @@ class ImageEditor(QMainWindow):
         )
         self.classify_action.triggered.connect(self.classify)
         toolbar.addAction(self.classify_action)
+
+        self.root_analysis_action = QAction(
+            style.standardIcon(QStyle.SP_DialogApplyButton),
+            "Анализ корней",
+            self,
+        )
+        self.root_analysis_action.triggered.connect(self.analyze_roots)
+        toolbar.addAction(self.root_analysis_action)
 
         self.rotate_action = QAction(
             style.standardIcon(QStyle.SP_BrowserReload), "Повернуть на 90°", self
@@ -522,33 +555,35 @@ class ImageEditor(QMainWindow):
             for box in results[0].boxes:
                 class_id = int(box.cls)
                 class_name = results[0].names[class_id]
-                if class_name == "Seeding":
-                    score = float(box.conf)
-                    x_center, y_center, width, height = box.xywh[0].cpu().numpy()
-                    x1 = int(x_center - width / 2)
-                    y1 = int(y_center - height / 2)
-                    x2 = int(x_center + width / 2)
-                    y2 = int(y_center + height / 2)
+                if str(class_name).lower() != "seeding":
+                    continue
 
-                    h, w = image.shape[:2]
-                    x1, x2 = max(0, x1), min(x2, w)
-                    y1, y2 = max(0, y1), min(y2, h)
-                    if x2 <= x1 or y2 <= y1:
-                        logger.debug(
-                            "find_seedlings: пропускаем некорректный bbox %s",
-                            (x1, y1, x2, y2),
-                        )
-                        continue
+                score = float(box.conf)
+                x_center, y_center, width, height = box.xywh[0].cpu().numpy()
+                x1 = int(x_center - width / 2)
+                y1 = int(y_center - height / 2)
+                x2 = int(x_center + width / 2)
+                y2 = int(y_center + height / 2)
 
-                    boxes.append([x1, y1, x2, y2])
-                    scores.append(score)
-                    class_boxes_data.append(
-                        {
-                            "class_name": class_name,
-                            "score": score,
-                            "coords": (x1, y1, x2, y2),
-                        }
+                h, w = image.shape[:2]
+                x1, x2 = max(0, x1), min(x2, w)
+                y1, y2 = max(0, y1), min(y2, h)
+                if x2 <= x1 or y2 <= y1:
+                    logger.debug(
+                        "find_seedlings: пропускаем некорректный bbox %s",
+                        (x1, y1, x2, y2),
                     )
+                    continue
+
+                boxes.append([x1, y1, x2, y2])
+                scores.append(score)
+                class_boxes_data.append(
+                    {
+                        "class_name": class_name,
+                        "score": score,
+                        "coords": (x1, y1, x2, y2),
+                    }
+                )
 
             logger.info(
                 "find_seedlings: найдено %s боксов, запускаем NMS", len(boxes)
@@ -874,7 +909,202 @@ class ImageEditor(QMainWindow):
 
         active_idx = getattr(self, "_active_image_index", 0)
         self.display_image_with_boxes(active_idx)
+        self._update_action_states()
         logger.info("classify: завершено")
+
+    def analyze_roots(self) -> None:
+        """Вычисляет жизнеспособность корней для классифицированных сеянцев."""
+
+        self._update_action_states()
+        if not self._has_classified_parts():
+            logger.warning("analyze_roots: Нет классифицированных частей для анализа")
+            return
+
+        required_parts = {"flower", "root", "stem"}
+        summary: list[tuple[int, int, ObjectImage, RootAnalysisResult]] = []
+
+        for img_idx, objects in enumerate(self.image_storage.class_object_image or []):
+            for obj_idx, obj in enumerate(objects):
+                if not obj.image_all_class or not obj.image:
+                    continue
+                class_names = {cls.class_name.lower() for cls in obj.image_all_class}
+                if not required_parts.issubset(class_names):
+                    logger.debug(
+                        "analyze_roots: пропускаем сеянец %s — не хватает классов", obj_idx
+                    )
+                    continue
+
+                root_classes = [
+                    cls for cls in obj.image_all_class if cls.class_name.lower() == "root"
+                ]
+                if not root_classes:
+                    continue
+
+                obj.root_analysis = []
+                for cls in root_classes:
+                    mask = self._build_root_mask(obj, cls)
+                    result = self.root_analyzer.analyze_root(
+                        mask, obj.image[0], float(cls.confidence)
+                    )
+                    obj.root_analysis.append(result)
+
+                if obj.root_analysis:
+                    best = max(obj.root_analysis, key=lambda r: r.confidence)
+                    summary.append((img_idx, obj_idx, obj, best))
+
+        if not summary:
+            logger.warning("analyze_roots: нет сеянцев с корнями для анализа")
+            return
+
+        self._show_root_report(summary)
+
+    def _build_root_mask(self, seeding_obj: ObjectImage, cls_obj: AllClassImage) -> np.ndarray:
+        """Генерирует маску корня по кропу класса и его bbox."""
+
+        base_img = seeding_obj.image[0] if seeding_obj.image else None
+        if base_img is None:
+            return np.zeros((1, 1), dtype=np.uint8)
+
+        h, w = base_img.shape[:2]
+        mask = np.zeros((h, w), dtype=np.uint8)
+
+        local_mask = None
+        if isinstance(cls_obj.image, np.ndarray):
+            cls_img = cls_obj.image
+            if cls_img.ndim == 3 and cls_img.shape[2] == 3:
+                cls_img = cv2.cvtColor(cls_img, cv2.COLOR_BGR2GRAY)
+            _, local_mask = cv2.threshold(
+                cls_img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU
+            )
+
+        if cls_obj.bbox:
+            x1, y1, x2, y2 = map(int, cls_obj.bbox)
+            x1, x2 = max(0, x1), min(w, x2)
+            y1, y2 = max(0, y1), min(h, y2)
+            if x2 > x1 and y2 > y1:
+                if local_mask is not None:
+                    resized = cv2.resize(local_mask, (x2 - x1, y2 - y1))
+                    mask[y1:y2, x1:x2] = resized
+                else:
+                    cv2.rectangle(mask, (x1, y1), (x2, y2), 255, -1)
+        elif local_mask is not None:
+            mask = cv2.resize(local_mask, (w, h))
+
+        return mask
+
+    @staticmethod
+    def _array_to_qpixmap(image: np.ndarray, max_size: int = 220) -> QPixmap | None:
+        if image is None or not isinstance(image, np.ndarray):
+            return None
+        if image.ndim == 3 and image.shape[2] == 3:
+            image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            h, w, _ = image_rgb.shape
+            bytes_per_line = 3 * w
+            q_image = QImage(image_rgb.data, w, h, bytes_per_line, QImage.Format_RGB888)
+        elif image.ndim == 2:
+            h, w = image.shape
+            q_image = QImage(image.data, w, h, w, QImage.Format_Grayscale8)
+        else:
+            return None
+        pixmap = QPixmap.fromImage(q_image)
+        return pixmap.scaled(max_size, max_size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+
+    def _show_root_report(
+        self, summary: list[tuple[int, int, ObjectImage, RootAnalysisResult]]
+    ) -> None:
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Отчёт по корневой системе")
+        dialog.setMinimumSize(1000, 600)
+        dialog.resize(1200, 750)
+        dialog.setSizeGripEnabled(True)
+
+        layout = QVBoxLayout(dialog)
+        table = QTableWidget(len(summary), 3, dialog)
+        table.setAlternatingRowColors(True)
+        table.setWordWrap(True)
+        table.verticalHeader().setVisible(False)
+        table.setHorizontalHeaderLabels(["Сеянец", "Жизнеспособность", "Показатели"])
+        table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        table.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
+        table.verticalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+
+        for row, (img_idx, obj_idx, obj, result) in enumerate(summary):
+            pixmap = self._array_to_qpixmap(obj.image[0], max_size=260)
+            label = QLabel(f"Страница {img_idx + 1}, сеянец {obj_idx + 1}")
+            label.setAlignment(Qt.AlignCenter)
+            label.setMargin(6)
+            if pixmap:
+                label.setPixmap(pixmap)
+                label.setMinimumSize(pixmap.size())
+                label.setMaximumSize(pixmap.size())
+            table.setCellWidget(row, 0, label)
+
+            viability_item = QTableWidgetItem(result.viability.value)
+            viability_item.setTextAlignment(Qt.AlignCenter)
+            if result.viability == RootViability.VIABLE:
+                viability_item.setBackground(QColor(200, 255, 200))
+            elif result.viability == RootViability.CRITICAL:
+                viability_item.setBackground(QColor(255, 235, 185))
+            else:
+                viability_item.setBackground(QColor(255, 200, 200))
+            table.setItem(row, 1, viability_item)
+
+            morphology = result.morphology
+            metrics_label = QLabel(
+                (
+                    f"Оценка: {result.score:.2f}\n"
+                    f"Длина: {morphology.length:.1f} px\n"
+                    f"Толщина: {morphology.mean_thickness:.1f} px\n"
+                    f"Ветвистость: {morphology.branching_index:.3f}\n"
+                    f"Плотность: {morphology.density:.3f}\n"
+                    f"Уверенность модели: {result.confidence:.2f}"
+                )
+            )
+            metrics_label.setAlignment(Qt.AlignTop | Qt.AlignLeft)
+            metrics_label.setWordWrap(True)
+            metrics_label.setMargin(6)
+            metrics_label.setToolTip(
+                "Оценка — итоговый взвешенный балл; длина — по периметру/размеру маски, толщина — площадь/длина,"
+                " ветвистость — узлы скелета, плотность — площадь/площадь прямоугольника, уверенность — из"
+                " модели сегментации."
+            )
+            table.setCellWidget(row, 2, metrics_label)
+
+        close_btn = QPushButton("Закрыть", dialog)
+        close_btn.clicked.connect(dialog.accept)
+
+        expand_btn = QPushButton("Развернуть", dialog)
+
+        def toggle_expand():
+            if dialog.isMaximized():
+                dialog.showNormal()
+                expand_btn.setText("Развернуть")
+            else:
+                dialog.showMaximized()
+                expand_btn.setText("В окно")
+
+        expand_btn.clicked.connect(toggle_expand)
+
+        button_layout = QHBoxLayout()
+        button_layout.addWidget(expand_btn)
+        button_layout.addStretch(1)
+        button_layout.addWidget(close_btn)
+
+        layout.addWidget(table)
+
+        hint_label = QLabel(
+            "Показатели считаются по бинарной маске корня: длина — по габаритам/периметру контура,\n"
+            "средняя толщина — как отношение площади маски к длине, ветвистость — по числу узлов скелета,\n"
+            "плотность — как доля площади маски в ограничивающем прямоугольнике, уверенность — из модели сегментации."
+        )
+        hint_label.setWordWrap(True)
+        hint_label.setMargin(4)
+        hint_label.setStyleSheet("color: #444; font-size: 11px;")
+
+        layout.addWidget(hint_label)
+        layout.addLayout(button_layout)
+        dialog.exec_()
 
     def create_report(self) -> None:
         """Создаёт PDF-отчёт по текущим результатам детекции."""
