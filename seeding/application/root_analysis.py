@@ -52,7 +52,7 @@ class RootAnalysisResult:
 class RootAnalyzer:
     """Вычисляет морфологические показатели по бинарной маске корня."""
 
-    def __init__(self, viability_threshold: float = 0.35) -> None:
+    def __init__(self, viability_threshold: float = 0.85) -> None:
         self.viability_threshold = viability_threshold
 
     def analyze_root(
@@ -167,17 +167,34 @@ class RootAnalyzer:
         return branches / max(endpoints, 1)
 
     def _estimate_viability(self, morphology: RootMorphology, confidence: float) -> tuple[RootViability, float]:
-        if morphology.length == 0 or morphology.mean_thickness == 0:
+        if morphology.length < 20 or morphology.mean_thickness < 2:
             return RootViability.NOT_RECOGNIZED, 0.0
 
-        score = 0.0
-        score += min(morphology.length / 50.0, 1.0) * 0.35
-        score += min(morphology.density / 0.5, 1.0) * 0.25
-        score += min(morphology.branching_index / 0.2, 1.0) * 0.2
-        score += min(confidence, 1.0) * 0.2
+        # Весовые коэффициенты (можно настраивать)
+        w_length = 0.4
+        w_thickness = 0.3
+        w_branching = 0.2
+        w_density = 0.1
 
-        if score >= max(self.viability_threshold, 0.65):
+        # Нормализация (примерные ожидаемые значения для здорового корня)
+        norm_length = min(morphology.length / 100.0, 1.0)  # >100 px — отлично
+        norm_thickness = min(morphology.mean_thickness / 8.0, 1.0)  # >8 px — толстый
+        norm_branching = min(morphology.branching_index / 0.3, 1.0)  # >0.3 — ветвистый
+        norm_density = min(morphology.density / 0.4, 1.0)  # >40% заполнения
+
+        score = (
+                w_length * norm_length +
+                w_thickness * norm_thickness +
+                w_branching * norm_branching +
+                w_density * norm_density
+        )
+
+        # Учёт уверенности модели
+        score = score * 0.8 + confidence * 0.2
+
+        if score >= 0.75:
             return RootViability.VIABLE, score
-        if score >= self.viability_threshold:
+        elif score >= 0.5:
             return RootViability.CRITICAL, score
-        return RootViability.NOT_RECOGNIZED, score
+        else:
+            return RootViability.NOT_RECOGNIZED, score

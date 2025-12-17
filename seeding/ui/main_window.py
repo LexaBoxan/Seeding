@@ -223,21 +223,7 @@ class ImageEditor(QMainWindow):
         self.classify_action.triggered.connect(self.classify)
         toolbar.addAction(self.classify_action)
 
-        self.root_analysis_action = QAction(
-            style.standardIcon(QStyle.SP_DialogApplyButton),
-            "Анализ корней",
-            self,
-        )
-        self.root_analysis_action.triggered.connect(self.analyze_roots)
-        toolbar.addAction(self.root_analysis_action)
 
-        self.root_analysis_action = QAction(
-            style.standardIcon(QStyle.SP_DialogApplyButton),
-            "Анализ корней",
-            self,
-        )
-        self.root_analysis_action.triggered.connect(self.analyze_roots)
-        toolbar.addAction(self.root_analysis_action)
 
         self.root_analysis_action = QAction(
             style.standardIcon(QStyle.SP_DialogApplyButton),
