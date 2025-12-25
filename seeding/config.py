@@ -21,5 +21,15 @@ DEFAULT_CLASSIFY_WEIGHTS_PATH = Path(
     )
 )
 
+# Новый: Путь к третьей модели для классификации жизнеспособности корня (good/bad)
+DEFAULT_ROOT_CLASSIFY_WEIGHTS_PATH = Path(
+    os.getenv(
+        "YOLO_ROOT_CLASSIFY_WEIGHTS_PATH",
+        str(PROJECT_ROOT / "models" / "best_root_cls.pt"),  # Замените на вашу обученную модель
+    )
+)
+
 # Параметр поворота на 90 градусов: значение k для np.rot90
 ROTATE_K = 1
+
+SEG_MODEL_CLASSES = ["flower", "root", "stem"]

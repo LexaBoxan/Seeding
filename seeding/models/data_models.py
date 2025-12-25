@@ -24,6 +24,7 @@ class AllClassImage:
     confidence: float
     image: Union[np.ndarray, Image.Image]
     bbox: tuple | None = None  # (x1, y1, x2, y2) относит. к кропу сеянца
+    mask: Optional[np.ndarray] = None
 
 
 @dataclass

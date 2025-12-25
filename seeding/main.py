@@ -4,20 +4,16 @@ import os
 import sys
 
 from PyQt5.QtWidgets import QApplication
-import qt_material
 
 from seeding.config import DEFAULT_WEIGHTS_PATH
-from seeding.ui.main_window import ImageEditor
 
 
 def main() -> None:
-    """Запускает графическое приложение."""
-
-    parser = argparse.ArgumentParser(description="ImageEditor")
+    parser = argparse.ArgumentParser(description="Seeding Analyzer")
     parser.add_argument(
         "--weights",
         default=os.getenv("YOLO_WEIGHTS_PATH", str(DEFAULT_WEIGHTS_PATH)),
-        help="Путь к весам YOLOv8",
+        help="Путь к весам модели детекции",
     )
     args = parser.parse_args()
 
@@ -26,10 +22,19 @@ def main() -> None:
         format="%(levelname)s - %(name)s - %(message)s",
     )
 
+    # Создаём приложение
     app = QApplication(sys.argv)
+
+    # Применяем тему ПОСЛЕ создания приложения
+    import qt_material
     qt_material.apply_stylesheet(app, theme="dark_blue.xml")
+
+    # Импорт главного окна
+    from seeding.ui.main_window import ImageEditor
+
     window = ImageEditor(weights_path=args.weights)
     window.show()
+
     sys.exit(app.exec_())
 
 
