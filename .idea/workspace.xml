@@ -6,7 +6,11 @@
   <component name="ChangeListManager">
     <list default="true" id="300734ec-daa0-4c66-b3b7-98db00b5250b" name="Changes" comment="Add files via upload">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/seeding/application/root_analysis.py" beforeDir="false" afterPath="$PROJECT_DIR$/seeding/application/root_analysis.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/seeding/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/seeding/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/seeding/application/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/seeding/application/pipeline.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/seeding/application/root_analysis.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/seeding/models/data_models.py" beforeDir="false" afterPath="$PROJECT_DIR$/seeding/models/data_models.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/seeding/ui/main_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/seeding/ui/main_window.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -63,7 +67,7 @@
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
-    <option name="RESET_MODE" value="MIXED" />
+    <option name="RESET_MODE" value="HARD" />
     <option name="ROOT_SYNC" value="DONT_SYNC" />
   </component>
   <component name="GitHubPullRequestSearchHistory">{
@@ -87,36 +91,36 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ASKED_MARK_IGNORED_FILES_AS_EXCLUDED": "true",
-    "Python.SegMl.executor": "Run",
-    "Python.TestSegML.executor": "Run",
-    "Python.TestYOLO10seg.executor": "Run",
-    "Python.TrainYOLOseg.executor": "Run",
-    "Python.config.executor": "Run",
-    "Python.effekt.executor": "Run",
-    "Python.image_processor.executor": "Run",
-    "Python.main.executor": "Run",
-    "Python.main_window.executor": "Run",
-    "Python.process_pdf_and_save_crops.executor": "Run",
-    "Python.sam_folder_annotator.executor": "Run",
-    "Python.shuffle.executor": "Run",
-    "Python.ui_main.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "V3.1",
-    "last_opened_file_path": "E:/_JOB_/_Python/Seeding",
-    "node.js.detected.package.eslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable",
-    "two.files.diff.last.used.file": "E:/_JOB_/_Python/Seeding/README.md",
-    "two.files.diff.last.used.folder": "E:/_JOB_/_Python/SeedingV1.1",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ASKED_MARK_IGNORED_FILES_AS_EXCLUDED&quot;: &quot;true&quot;,
+    &quot;Python.SegMl.executor&quot;: &quot;Run&quot;,
+    &quot;Python.TestSegML.executor&quot;: &quot;Run&quot;,
+    &quot;Python.TestYOLO10seg.executor&quot;: &quot;Run&quot;,
+    &quot;Python.TrainYOLOseg.executor&quot;: &quot;Run&quot;,
+    &quot;Python.config.executor&quot;: &quot;Run&quot;,
+    &quot;Python.effekt.executor&quot;: &quot;Run&quot;,
+    &quot;Python.image_processor.executor&quot;: &quot;Run&quot;,
+    &quot;Python.main.executor&quot;: &quot;Run&quot;,
+    &quot;Python.main_window.executor&quot;: &quot;Run&quot;,
+    &quot;Python.process_pdf_and_save_crops.executor&quot;: &quot;Run&quot;,
+    &quot;Python.sam_folder_annotator.executor&quot;: &quot;Run&quot;,
+    &quot;Python.shuffle.executor&quot;: &quot;Run&quot;,
+    &quot;Python.ui_main.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;V3.1&quot;,
+    &quot;last_opened_file_path&quot;: &quot;E:/_JOB_/_Python/Seeding&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;,
+    &quot;two.files.diff.last.used.file&quot;: &quot;E:/_JOB_/_Python/Seeding/README.md&quot;,
+    &quot;two.files.diff.last.used.folder&quot;: &quot;E:/_JOB_/_Python/SeedingV1.1&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="Push.Settings">
     <force-push-targets>
       <force-push-target remote-path="origin" branch="9cx4to-codex" />
@@ -219,14 +223,15 @@
     <SUITE FILE_PATH="coverage/Seeding$image_processor.coverage" NAME="image_processor Coverage Results" MODIFIED="1755499384227" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/seeding/processing" />
     <SUITE FILE_PATH="coverage/Seeding$sam_folder_annotator.coverage" NAME="sam_folder_annotator Coverage Results" MODIFIED="1764093276831" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/TestProg" />
     <SUITE FILE_PATH="coverage/Seeding$shuffle.coverage" NAME="shuffle Coverage Results" MODIFIED="1764256181179" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/TestProg" />
-    <SUITE FILE_PATH="coverage/Seeding$main.coverage" NAME="main Coverage Results" MODIFIED="1765947677210" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/seeding" />
+    <SUITE FILE_PATH="coverage/Seeding$main.coverage" NAME="main Coverage Results" MODIFIED="1771226690480" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/seeding" />
+    <SUITE FILE_PATH="coverage/Seeding$TrainYOLOanalisis.coverage" NAME="TrainYOLOanalisis Coverage Results" MODIFIED="1766387740373" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/TestProg" />
     <SUITE FILE_PATH="coverage/Seeding$process_pdf_and_save_crops.coverage" NAME="process_pdf_and_save_crops Coverage Results" MODIFIED="1764223841140" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/TestProg" />
     <SUITE FILE_PATH="coverage/Seeding$config.coverage" NAME="config Результаты покрытия" MODIFIED="1752835721457" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/seeding" />
     <SUITE FILE_PATH="coverage/Seeding$TrainYOLOseg.coverage" NAME="TrainYOLOseg Coverage Results" MODIFIED="1764256993853" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/TestProg" />
     <SUITE FILE_PATH="coverage/Seeding$effekt.coverage" NAME="effekt Coverage Results" MODIFIED="1764241045898" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/TestProg" />
     <SUITE FILE_PATH="coverage/Seeding$TestYOLO10seg.coverage" NAME="TestYOLO10seg Coverage Results" MODIFIED="1764091130004" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/TestProg" />
     <SUITE FILE_PATH="coverage/Seeding$TestSegML.coverage" NAME="TestSegML Coverage Results" MODIFIED="1755514294044" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/TestProg" />
-    <SUITE FILE_PATH="coverage/Seeding$main_window.coverage" NAME="main_window Coverage Results" MODIFIED="1755851194702" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/seeding/ui" />
+    <SUITE FILE_PATH="coverage/Seeding$main_window.coverage" NAME="main_window Coverage Results" MODIFIED="1771225055243" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/seeding/ui" />
     <SUITE FILE_PATH="coverage/Seeding$SegMl.coverage" NAME="SegMl Coverage Results" MODIFIED="1755493660648" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/TestProg" />
     <SUITE FILE_PATH="coverage/Seeding$ui_main.coverage" NAME="ui_main Результаты покрытия" MODIFIED="1752740065108" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/seeding" />
   </component>

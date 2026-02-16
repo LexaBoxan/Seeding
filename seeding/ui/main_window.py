@@ -37,11 +37,7 @@ from ultralytics import YOLO
 from seeding.config import ROTATE_K, DEFAULT_CLASSIFY_WEIGHTS_PATH
 from seeding.models.data_models import AllClassImage, ObjectImage, OriginalImage
 from seeding.utils import simple_nms, rotate_bbox
-from seeding.application.root_analysis import (
-    RootAnalyzer,
-    RootAnalysisResult,
-    RootViability,
-)
+
 from .tree_widget import LayerTreeWidget
 from .bbox_item import BBoxItem
 
@@ -124,11 +120,6 @@ class ImageEditor(QMainWindow):
     """
 
     def __init__(self, weights_path: str):
-        """Инициализирует окно и загружает модель.
-
-        Args:
-            weights_path: Путь к файлу весов YOLOv8.
-        """
         super().__init__()
         self.setWindowTitle("Современный UI для работы с изображениями")
         self.setGeometry(100, 100, 1200, 800)
@@ -137,7 +128,6 @@ class ImageEditor(QMainWindow):
         self.weights_path = weights_path
         self.model = YOLO(weights_path)
         self.classify_model = None
-        self.root_analyzer = RootAnalyzer()
 
         self.init_ui()
 
@@ -163,9 +153,8 @@ class ImageEditor(QMainWindow):
         file_menu.addAction(open_action)
 
     def _update_action_states(self) -> None:
-        """Включает или отключает действия, зависящие от наличия изображения."""
+        """Включает/отключает действия в зависимости от наличия изображения."""
         has_image = bool(self.image_storage.images)
-        has_classes = self._has_classified_parts()
         for action in (
             self.rotate_action,
             self.seedlings_action,
@@ -175,8 +164,6 @@ class ImageEditor(QMainWindow):
             self.save_action,
         ):
             action.setEnabled(has_image)
-        if hasattr(self, "root_analysis_action"):
-            self.root_analysis_action.setEnabled(has_image and has_classes)
 
     def _has_classified_parts(self) -> bool:
         if not self.image_storage.class_object_image:
@@ -188,92 +175,58 @@ class ImageEditor(QMainWindow):
         return False
 
     def create_toolbars(self):
-        """Создаёт боковую панель инструментов."""
         toolbar = QToolBar("Toolbar", self)
         toolbar.setOrientation(Qt.Vertical)
         toolbar.setMovable(False)
         toolbar.setFixedWidth(150)
-
         toolbar.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
         self.addToolBar(Qt.LeftToolBarArea, toolbar)
 
         style = self.style()
 
-        self.mask_action = QAction(
-            style.standardIcon(QStyle.SP_FileDialogNewFolder), "Создать маску", self
-        )
+        self.mask_action = QAction(style.standardIcon(QStyle.SP_FileDialogNewFolder), "Создать маску", self)
         self.mask_action.triggered.connect(self.create_mask)
         toolbar.addAction(self.mask_action)
 
-        self.seedlings_action = QAction(
-            style.standardIcon(QStyle.SP_MediaPlay), "Найти сеянцы", self
-        )
+        self.seedlings_action = QAction(style.standardIcon(QStyle.SP_MediaPlay), "Найти сеянцы", self)
         self.seedlings_action.triggered.connect(self.find_seedlings)
         toolbar.addAction(self.seedlings_action)
 
-        self.find_all_seedlings_action = QAction(
-            style.standardIcon(QStyle.SP_DialogYesButton), "Найти все сеянцы", self
-        )
+        self.find_all_seedlings_action = QAction(style.standardIcon(QStyle.SP_DialogYesButton), "Найти все сеянцы", self)
         self.find_all_seedlings_action.triggered.connect(self.find_all_seedlings)
         toolbar.addAction(self.find_all_seedlings_action)
 
-        self.classify_action = QAction(
-            style.standardIcon(QStyle.SP_FileDialogDetailedView), "Классификация", self
-        )
+        self.classify_action = QAction(style.standardIcon(QStyle.SP_FileDialogDetailedView), "Классификация", self)
         self.classify_action.triggered.connect(self.classify)
         toolbar.addAction(self.classify_action)
 
-
-
-        self.root_analysis_action = QAction(
-            style.standardIcon(QStyle.SP_DialogApplyButton),
-            "Анализ корней",
-            self,
-        )
-        self.root_analysis_action.triggered.connect(self.analyze_roots)
-        toolbar.addAction(self.root_analysis_action)
-
-        self.rotate_action = QAction(
-            style.standardIcon(QStyle.SP_BrowserReload), "Повернуть на 90°", self
-        )
+        self.rotate_action = QAction(style.standardIcon(QStyle.SP_BrowserReload), "Повернуть на 90°", self)
         self.rotate_action.triggered.connect(self.rotate_image)
         toolbar.addAction(self.rotate_action)
 
         toolbar.addSeparator()
 
-        self.report_action = QAction(
-            style.standardIcon(QStyle.SP_FileDialogContentsView), "Создать отчет", self
-        )
+        self.report_action = QAction(style.standardIcon(QStyle.SP_FileDialogContentsView), "Создать отчет", self)
         self.report_action.triggered.connect(self.create_report)
         toolbar.addAction(self.report_action)
 
         toolbar.addSeparator()
 
-        self.zoom_in_action = QAction(
-            style.standardIcon(QStyle.SP_ArrowUp), "Приблизить", self
-        )
+        self.zoom_in_action = QAction(style.standardIcon(QStyle.SP_ArrowUp), "Приблизить", self)
         self.zoom_in_action.triggered.connect(self.zoom_in)
         toolbar.addAction(self.zoom_in_action)
 
-        self.zoom_out_action = QAction(
-            style.standardIcon(QStyle.SP_ArrowDown), "Отдалить", self
-        )
+        self.zoom_out_action = QAction(style.standardIcon(QStyle.SP_ArrowDown), "Отдалить", self)
         self.zoom_out_action.triggered.connect(self.zoom_out)
         toolbar.addAction(self.zoom_out_action)
 
-        self.fit_action = QAction(
-            style.standardIcon(QStyle.SP_DesktopIcon), "Вписать", self
-        )
+        self.fit_action = QAction(style.standardIcon(QStyle.SP_DesktopIcon), "Вписать", self)
         self.fit_action.triggered.connect(self.fit_to_window)
         toolbar.addAction(self.fit_action)
 
         toolbar.addSeparator()
 
-        self.save_action = QAction(
-            style.standardIcon(QStyle.SP_DialogSaveButton),
-            "Сохранить изменения",
-            self,
-        )
+        self.save_action = QAction(style.standardIcon(QStyle.SP_DialogSaveButton), "Сохранить изменения", self)
         self.save_action.triggered.connect(self.save_changes)
         toolbar.addAction(self.save_action)
 
@@ -914,199 +867,7 @@ class ImageEditor(QMainWindow):
         self._update_action_states()
         logger.info("classify: завершено")
 
-    def analyze_roots(self) -> None:
-        """Вычисляет жизнеспособность корней для классифицированных сеянцев."""
 
-        self._update_action_states()
-        if not self._has_classified_parts():
-            logger.warning("analyze_roots: Нет классифицированных частей для анализа")
-            return
-
-        required_parts = {"flower", "root", "stem"}
-        summary: list[tuple[int, int, ObjectImage, RootAnalysisResult]] = []
-
-        for img_idx, objects in enumerate(self.image_storage.class_object_image or []):
-            for obj_idx, obj in enumerate(objects):
-                if not obj.image_all_class or not obj.image:
-                    continue
-                class_names = {cls.class_name.lower() for cls in obj.image_all_class}
-                if not required_parts.issubset(class_names):
-                    logger.debug(
-                        "analyze_roots: пропускаем сеянец %s — не хватает классов", obj_idx
-                    )
-                    continue
-
-                root_classes = [
-                    cls for cls in obj.image_all_class if cls.class_name.lower() == "root"
-                ]
-                if not root_classes:
-                    continue
-
-                obj.root_analysis = []
-                for cls in root_classes:
-                    mask = self._build_root_mask(obj, cls)
-                    result = self.root_analyzer.analyze_root(
-                        mask, obj.image[0], float(cls.confidence)
-                    )
-                    obj.root_analysis.append(result)
-
-                if obj.root_analysis:
-                    best = max(obj.root_analysis, key=lambda r: r.confidence)
-                    summary.append((img_idx, obj_idx, obj, best))
-
-        if not summary:
-            logger.warning("analyze_roots: нет сеянцев с корнями для анализа")
-            return
-
-        self._show_root_report(summary)
-
-    def _build_root_mask(self, seeding_obj: ObjectImage, cls_obj: AllClassImage) -> np.ndarray:
-        """Генерирует маску корня по кропу класса и его bbox."""
-
-        base_img = seeding_obj.image[0] if seeding_obj.image else None
-        if base_img is None:
-            return np.zeros((1, 1), dtype=np.uint8)
-
-        h, w = base_img.shape[:2]
-        mask = np.zeros((h, w), dtype=np.uint8)
-
-        local_mask = None
-        if isinstance(cls_obj.image, np.ndarray):
-            cls_img = cls_obj.image
-            if cls_img.ndim == 3 and cls_img.shape[2] == 3:
-                cls_img = cv2.cvtColor(cls_img, cv2.COLOR_BGR2GRAY)
-            _, local_mask = cv2.threshold(
-                cls_img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU
-            )
-
-        if cls_obj.bbox:
-            x1, y1, x2, y2 = map(int, cls_obj.bbox)
-            x1, x2 = max(0, x1), min(w, x2)
-            y1, y2 = max(0, y1), min(h, y2)
-            if x2 > x1 and y2 > y1:
-                if local_mask is not None:
-                    resized = cv2.resize(local_mask, (x2 - x1, y2 - y1))
-                    mask[y1:y2, x1:x2] = resized
-                else:
-                    cv2.rectangle(mask, (x1, y1), (x2, y2), 255, -1)
-        elif local_mask is not None:
-            mask = cv2.resize(local_mask, (w, h))
-
-        return mask
-
-    @staticmethod
-    def _array_to_qpixmap(image: np.ndarray, max_size: int = 220) -> QPixmap | None:
-        if image is None or not isinstance(image, np.ndarray):
-            return None
-        if image.ndim == 3 and image.shape[2] == 3:
-            image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            h, w, _ = image_rgb.shape
-            bytes_per_line = 3 * w
-            q_image = QImage(image_rgb.data, w, h, bytes_per_line, QImage.Format_RGB888)
-        elif image.ndim == 2:
-            h, w = image.shape
-            q_image = QImage(image.data, w, h, w, QImage.Format_Grayscale8)
-        else:
-            return None
-        pixmap = QPixmap.fromImage(q_image)
-        return pixmap.scaled(max_size, max_size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-
-    def _show_root_report(
-        self, summary: list[tuple[int, int, ObjectImage, RootAnalysisResult]]
-    ) -> None:
-        dialog = QDialog(self)
-        dialog.setWindowTitle("Отчёт по корневой системе")
-        dialog.setMinimumSize(1000, 600)
-        dialog.resize(1200, 750)
-        dialog.setSizeGripEnabled(True)
-
-        layout = QVBoxLayout(dialog)
-        table = QTableWidget(len(summary), 3, dialog)
-        table.setAlternatingRowColors(True)
-        table.setWordWrap(True)
-        table.verticalHeader().setVisible(False)
-        table.setHorizontalHeaderLabels(["Сеянец", "Жизнеспособность", "Показатели"])
-        table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
-        table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
-        table.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
-        table.verticalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
-
-        for row, (img_idx, obj_idx, obj, result) in enumerate(summary):
-            pixmap = self._array_to_qpixmap(obj.image[0], max_size=260)
-            label = QLabel(f"Страница {img_idx + 1}, сеянец {obj_idx + 1}")
-            label.setAlignment(Qt.AlignCenter)
-            label.setMargin(6)
-            if pixmap:
-                label.setPixmap(pixmap)
-                label.setMinimumSize(pixmap.size())
-                label.setMaximumSize(pixmap.size())
-            table.setCellWidget(row, 0, label)
-
-            viability_item = QTableWidgetItem(result.viability.value)
-            viability_item.setTextAlignment(Qt.AlignCenter)
-            if result.viability == RootViability.VIABLE:
-                viability_item.setBackground(QColor(200, 255, 200))
-            elif result.viability == RootViability.CRITICAL:
-                viability_item.setBackground(QColor(255, 235, 185))
-            else:
-                viability_item.setBackground(QColor(255, 200, 200))
-            table.setItem(row, 1, viability_item)
-
-            morphology = result.morphology
-            metrics_label = QLabel(
-                (
-                    f"Оценка: {result.score:.2f}\n"
-                    f"Длина: {morphology.length:.1f} px\n"
-                    f"Толщина: {morphology.mean_thickness:.1f} px\n"
-                    f"Ветвистость: {morphology.branching_index:.3f}\n"
-                    f"Плотность: {morphology.density:.3f}\n"
-                    f"Уверенность модели: {result.confidence:.2f}"
-                )
-            )
-            metrics_label.setAlignment(Qt.AlignTop | Qt.AlignLeft)
-            metrics_label.setWordWrap(True)
-            metrics_label.setMargin(6)
-            metrics_label.setToolTip(
-                "Оценка — итоговый взвешенный балл; длина — по периметру/размеру маски, толщина — площадь/длина,"
-                " ветвистость — узлы скелета, плотность — площадь/площадь прямоугольника, уверенность — из"
-                " модели сегментации."
-            )
-            table.setCellWidget(row, 2, metrics_label)
-
-        close_btn = QPushButton("Закрыть", dialog)
-        close_btn.clicked.connect(dialog.accept)
-
-        expand_btn = QPushButton("Развернуть", dialog)
-
-        def toggle_expand():
-            if dialog.isMaximized():
-                dialog.showNormal()
-                expand_btn.setText("Развернуть")
-            else:
-                dialog.showMaximized()
-                expand_btn.setText("В окно")
-
-        expand_btn.clicked.connect(toggle_expand)
-
-        button_layout = QHBoxLayout()
-        button_layout.addWidget(expand_btn)
-        button_layout.addStretch(1)
-        button_layout.addWidget(close_btn)
-
-        layout.addWidget(table)
-
-        hint_label = QLabel(
-            "Показатели считаются по бинарной маске корня: длина — по габаритам/периметру контура,\n"
-            "средняя толщина — как отношение площади маски к длине, ветвистость — по числу узлов скелета,\n"
-            "плотность — как доля площади маски в ограничивающем прямоугольнике, уверенность — из модели сегментации."
-        )
-        hint_label.setWordWrap(True)
-        hint_label.setMargin(4)
-        hint_label.setStyleSheet("color: #444; font-size: 11px;")
-
-        layout.addWidget(hint_label)
-        layout.addLayout(button_layout)
-        dialog.exec_()
 
     def create_report(self) -> None:
         """Создаёт PDF-отчёт по текущим результатам детекции."""
