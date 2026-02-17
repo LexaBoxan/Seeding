@@ -1,4 +1,8 @@
-"""Dataclasses для хранения изображений и результатов детекции."""
+"""Модели данных для хранения изображений и результатов детекции.
+
+Содержит dataclass'ы: AllClassImage (часть растения), ObjectImage (сеянец),
+OriginalImage (набор страниц/изображений с детекциями).
+"""
 
 from dataclasses import dataclass, field
 from typing import List, Optional, Union
@@ -9,9 +13,7 @@ from PIL import Image
 
 @dataclass
 class AllClassImage:
-    """
-    Класс для хранения информации о выделенном классе на изображении.
-    """
+    """Информация о выделенной части растения (цветок, корень, стебель и т.д.)."""
     class_name: str
     confidence: float
     image: Union[np.ndarray, Image.Image]
@@ -20,9 +22,7 @@ class AllClassImage:
 
 @dataclass
 class ObjectImage:
-    """
-    Класс для хранения информации о выделенном объекте на изображении.
-    """
+    """Информация о найденном сеянце: bbox, кроп, confidence, части (image_all_class)."""
     class_name: str
     confidence: float
     image: List[Union[np.ndarray, Image.Image]] = field(default_factory=list)
@@ -33,9 +33,7 @@ class ObjectImage:
 
 @dataclass
 class OriginalImage:
-    """
-    Класс для хранения всей информации о загруженном исходном изображении.
-    """
+    """Контейнер: путь к файлу, список изображений и соответствующие детекции."""
     file_path: str = ""
     images: List[Union[np.ndarray, Image.Image]] = field(default_factory=list)
     masks: List[Union[np.ndarray, Image.Image]] = field(default_factory=list)

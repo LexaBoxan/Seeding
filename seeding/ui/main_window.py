@@ -1,4 +1,8 @@
-"""Основное окно приложения."""
+"""Главное окно приложения Seeding.
+
+Реализует ImageEditor — окно с загрузкой изображений/PDF, детекцией сеянцев YOLOv8,
+классификацией частей растения, деревом слоёв и генерацией PDF-отчётов.
+"""
 
 import logging
 import os
@@ -6,8 +10,8 @@ import os
 import cv2
 import fitz
 import numpy as np
-from PyQt5.QtCore import QPoint, Qt, QThread, pyqtSignal, QRectF
-from PyQt5.QtGui import QIcon, QImage, QPixmap, QTransform, QColor
+from PyQt5.QtCore import QPoint, Qt, QThread, pyqtSignal, QRectF, QSettings
+from PyQt5.QtGui import QColor, QImage, QKeySequence, QPainter, QPixmap, QTransform
 
 from PyQt5.QtWidgets import (
     QAction,
@@ -19,6 +23,7 @@ from PyQt5.QtWidgets import (
     QHeaderView,
     QLabel,
     QMainWindow,
+    QMessageBox,
     QProgressBar,
     QPushButton,
     QScrollArea,
@@ -31,21 +36,46 @@ from PyQt5.QtWidgets import (
     QWidget,
     QDialog,
     QHBoxLayout,
+    QTextEdit,
+    QShortcut,
 )
 from ultralytics import YOLO
 
-from seeding.config import ROTATE_K, DEFAULT_CLASSIFY_WEIGHTS_PATH
+import seeding.config as cfg
+from seeding.config import (
+    DETECTION_CLASS_NAME,
+    DEFAULT_CLASSIFY_WEIGHTS_PATH,
+    NMS_IOU_THRESHOLD,
+    PANEL_INFO_MIN_WIDTH,
+    PANEL_LAYERS_MAX_WIDTH,
+    PANEL_LAYERS_MIN_WIDTH,
+    PANEL_LAYOUT_MARGINS,
+    PDF_RENDER_SCALE,
+    QSETTINGS_APP,
+    QSETTINGS_ORG,
+    ROTATE_ANGLE_DEG,
+    ROTATE_K,
+    SPLITTER_SIZES,
+    VIEW_BACKGROUND_B,
+    VIEW_BACKGROUND_G,
+    VIEW_BACKGROUND_R,
+    WINDOW_HEIGHT,
+    WINDOW_WIDTH,
+    WINDOW_X,
+    WINDOW_Y,
+    ZOOM_FACTOR_INCREMENT,
+    ZOOM_FACTOR_INITIAL,
+    CONF_DISPLAY_HIGH,
+    CONF_DISPLAY_MEDIUM,
+)
 from seeding.models.data_models import AllClassImage, ObjectImage, OriginalImage
 from seeding.utils import simple_nms, rotate_bbox
 
-from .tree_widget import LayerTreeWidget
 from .bbox_item import BBoxItem
+from .settings_dialog import SettingsDialog
+from .tree_widget import LayerTreeWidget
 
 logger = logging.getLogger(__name__)
-
-# Ожидаемые классы для модели классификации
-# Используем список без привязки к индексам, чтобы лишь проверять состав классов
-EXPECTED_CLASSIFY_NAMES = ["flower", "root", "stem"]
 
 
 class DraggableScrollArea(QScrollArea):
@@ -121,15 +151,44 @@ class ImageEditor(QMainWindow):
 
     def __init__(self, weights_path: str):
         super().__init__()
-        self.setWindowTitle("Современный UI для работы с изображениями")
-        self.setGeometry(100, 100, 1200, 800)
-        self.zoom_factor = 1.0
+
+        # Загрузка сохранённых настроек при старте
+        settings = QSettings(QSETTINGS_ORG, QSETTINGS_APP)
+
+        # Обновляем глобальные переменные в config.py теми, что сохранил пользователь
+        # Если настроек еще нет, останутся дефолтные (0.9 и 0.5)
+        cfg.CONF_THRESHOLD_HIGH = float(settings.value("conf_high", cfg.CONF_THRESHOLD_HIGH))
+        cfg.CONF_THRESHOLD_LOW = float(settings.value("conf_low", cfg.CONF_THRESHOLD_LOW))
+
+        logger.info(f"Настройки загружены: High={cfg.CONF_THRESHOLD_HIGH}, Low={cfg.CONF_THRESHOLD_LOW}")
+
+
+        self.setWindowTitle("Анализ сеянцев")
+        self.setGeometry(WINDOW_X, WINDOW_Y, WINDOW_WIDTH, WINDOW_HEIGHT)
+
+        self.zoom_factor = ZOOM_FACTOR_INITIAL
         self.image_storage = OriginalImage()
         self.weights_path = weights_path
-        self.model = YOLO(weights_path)
+        self.model = None
         self.classify_model = None
 
+        try:
+            self.model = YOLO(weights_path)
+        except Exception as e:
+            logger.exception("Не удалось загрузить модель детекции")
+            QMessageBox.critical(
+                self,
+                "Ошибка загрузки модели",
+                f"Не удалось загрузить модель:\n{weights_path}\n\n{e}",
+            )
+
+        self._active_image_index = 0
+
         self.init_ui()
+
+        if self.model is None:
+            self.action_find.setEnabled(False)
+            self.action_find_all.setEnabled(False)
 
         self.progress_bar = QProgressBar()
         self.progress_bar.setRange(0, 1)
@@ -138,32 +197,254 @@ class ImageEditor(QMainWindow):
         self.statusBar().addPermanentWidget(self.progress_bar)
 
     def init_ui(self):
-        """Создаёт все основные виджеты интерфейса."""
         self.create_menu()
-        self.create_toolbars()
+        self.create_top_toolbar()  # ← теперь сверху
+        self.create_left_panel()  # ← новая левая панель
         self.create_central_widget()
         self.create_right_panel()
 
+        # Разделитель: левая | центр | правая
+        self.splitter = QSplitter(Qt.Horizontal)
+        self.splitter.addWidget(self.left_panel)
+        self.splitter.addWidget(self.scroll_area)
+        self.splitter.addWidget(self.right_panel)
+        self.splitter.setSizes(SPLITTER_SIZES)
+        self.setCentralWidget(self.splitter)
+
+        self._setup_shortcuts()
+
     def create_menu(self):
-        """Создаёт меню приложения с пунктом открытия файла."""
         menu_bar = self.menuBar()
         file_menu = menu_bar.addMenu("Файл")
         open_action = QAction("Открыть файл", self)
         open_action.triggered.connect(self.open_image)
         file_menu.addAction(open_action)
 
-    def _update_action_states(self) -> None:
-        """Включает/отключает действия в зависимости от наличия изображения."""
-        has_image = bool(self.image_storage.images)
-        for action in (
-            self.rotate_action,
-            self.seedlings_action,
-            self.find_all_seedlings_action,
-            self.classify_action,
-            self.report_action,
-            self.save_action,
-        ):
-            action.setEnabled(has_image)
+    # ====================== НОВАЯ ВЕРХНЯЯ ПАНЕЛЬ ======================
+    def create_top_toolbar(self):
+        """Создание панели инструментов с явным объявлением кнопок."""
+        self.toolbar = QToolBar("Инструменты", self)
+        self.toolbar.setObjectName("mainToolbar")
+        self.toolbar.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
+        self.toolbar.setMovable(False)
+        self.addToolBar(Qt.TopToolBarArea, self.toolbar)
+
+        style = self.style()
+
+        # --- СЕКЦИЯ: АНАЛИЗ ---
+        self.action_mask = QAction(style.standardIcon(QStyle.SP_FileDialogNewFolder), "Создать маску", self)
+        self.action_mask.setToolTip("Создание маски (в разработке)")
+        self.action_mask.triggered.connect(self.create_mask)
+        self.toolbar.addAction(self.action_mask)
+
+        self.action_find = QAction(style.standardIcon(QStyle.SP_MediaPlay), "Найти сеянцы", self)
+        self.action_find.setToolTip("Поиск сеянцев на текущем изображении (Ctrl+F)")
+        self.action_find.triggered.connect(self.find_seedlings)
+        self.toolbar.addAction(self.action_find)
+
+        self.action_find_all = QAction(style.standardIcon(QStyle.SP_DialogYesButton), "Найти все", self)
+        self.action_find_all.setToolTip("Поиск сеянцев на всех изображениях (Ctrl+Shift+F)")
+        self.action_find_all.triggered.connect(self.find_all_seedlings)
+        self.toolbar.addAction(self.action_find_all)
+
+        self.action_classify = QAction(style.standardIcon(QStyle.SP_FileDialogDetailedView), "Классификация", self)
+        self.action_classify.setToolTip("Классификация частей растения (Ctrl+C)")
+        self.action_classify.triggered.connect(self.classify)
+        self.toolbar.addAction(self.action_classify)
+
+        self.action_rotate = QAction(style.standardIcon(QStyle.SP_BrowserReload), "Повернуть 90°", self)
+        self.action_rotate.setToolTip("Повернуть изображение (Ctrl+R)")
+        self.action_rotate.triggered.connect(self.rotate_image)
+        self.toolbar.addAction(self.action_rotate)
+
+        self.toolbar.addSeparator()
+
+        # --- СЕКЦИЯ: ОТЧЕТЫ ---
+        self.action_report = QAction(style.standardIcon(QStyle.SP_FileDialogContentsView), "Отчёт PDF", self)
+        self.action_report.setToolTip("Создать PDF-отчёт (Ctrl+P)")
+        self.action_report.triggered.connect(self.create_report)
+        self.toolbar.addAction(self.action_report)
+
+        self.toolbar.addSeparator()
+
+        # --- СЕКЦИЯ: НАВИГАЦИЯ ---
+        self.action_zoom_in = QAction(style.standardIcon(QStyle.SP_ArrowUp), "Приблизить", self)
+        self.action_zoom_in.triggered.connect(self.zoom_in)
+        self.toolbar.addAction(self.action_zoom_in)
+
+        self.action_zoom_out = QAction(style.standardIcon(QStyle.SP_ArrowDown), "Отдалить", self)
+        self.action_zoom_out.triggered.connect(self.zoom_out)
+        self.toolbar.addAction(self.action_zoom_out)
+
+        self.action_fit = QAction(style.standardIcon(QStyle.SP_DesktopIcon), "Вписать", self)
+        self.action_fit.triggered.connect(self.fit_to_window)
+        self.toolbar.addAction(self.action_fit)
+
+        self.toolbar.addSeparator()
+
+        # --- СЕКЦИЯ: ФАЙЛЫ ---
+        self.action_open = QAction(style.standardIcon(QStyle.SP_DialogOpenButton), "Открыть файлы", self)
+        self.action_open.setToolTip("Открыть изображения или PDF (Ctrl+O)")
+        self.action_open.triggered.connect(self.open_image)
+        self.toolbar.addAction(self.action_open)
+
+        self.action_add = QAction(style.standardIcon(QStyle.SP_FileIcon), "Добавить файлы", self)
+        self.action_add.setToolTip("Добавить файлы к проекту (Ctrl+Shift+O)")
+        self.action_add.triggered.connect(self.add_files)
+        self.toolbar.addAction(self.action_add)
+
+        self.toolbar.addSeparator()
+
+        # --- СЕКЦИЯ: СИСТЕМА ---
+        self.action_save = QAction(style.standardIcon(QStyle.SP_DialogSaveButton), "Сохранить", self)
+        self.action_save.setToolTip("Сохранить изменения (Ctrl+S)")
+        self.action_save.triggered.connect(self.save_changes)
+        self.toolbar.addAction(self.action_save)
+
+        self.action_settings = QAction(style.standardIcon(QStyle.SP_ComputerIcon), "Настройки", self)
+        self.action_settings.setToolTip("Параметры порогов уверенности")
+        self.action_settings.triggered.connect(self.open_settings)
+        self.toolbar.addAction(self.action_settings)
+
+
+    # ====================== ЛЕВАЯ ПАНЕЛЬ ======================
+    def create_left_panel(self):
+        self.left_panel = QGroupBox("Информация")
+        self.left_panel.setMinimumWidth(PANEL_INFO_MIN_WIDTH)
+        self.left_panel.setObjectName("infoGroup")
+
+        layout = QVBoxLayout()
+        layout.setContentsMargins(*PANEL_LAYOUT_MARGINS)
+        self.info_text = QTextEdit()
+        self.info_text.setObjectName("infoPanel")
+        self.info_text.setReadOnly(True)
+        layout.addWidget(self.info_text)
+
+        self.left_panel.setLayout(layout)
+
+    def update_left_info(self, item_data: dict = None):
+        """Обновляет левую панель в зависимости от выбранного элемента."""
+        if not item_data or "type" not in item_data:
+            self.info_text.setHtml(
+                '<p style="color:#9ca3af; margin:0;">Выберите элемент в дереве</p>'
+            )
+            return
+
+        t = item_data["type"]
+
+        if t in ("original", "pdf"):
+            idx = item_data.get("index", 0)
+            self._show_page_stats(idx)
+        elif t == "seeding":
+            self._show_seeding_info(
+                item_data["parent_index"],
+                item_data["index"]
+            )
+        elif t == "class":
+            # для класса показываем информацию о сеянце
+            self._show_seeding_info(
+                item_data["parent_index"],
+                item_data["seeding_index"]
+            )
+    def switch_image(self, direction: int):
+        """Переключает на предыдущее/следующее изображение стрелками."""
+        if not self.image_storage.images:
+            return
+
+        new_idx = self._active_image_index + direction
+        new_idx = max(0, min(new_idx, len(self.image_storage.images) - 1))
+
+        if new_idx == self._active_image_index:
+            return
+
+        self._active_image_index = new_idx
+        self.display_image_with_boxes(new_idx)
+
+        # Выделяем соответствующий элемент в дереве
+        item = self.tree_widget.topLevelItem(new_idx)
+        if item:
+            self.tree_widget.setCurrentItem(item)
+
+        self.update_left_info({"type": "pdf", "index": new_idx})
+
+    def open_settings(self):
+        dialog = SettingsDialog(self)
+        if dialog.exec_() == QDialog.Accepted:
+            dialog.save_settings()
+            # После изменения настроек нужно перерисовать текущие боксы,
+            # чтобы они обновили цвета под новые пороги
+            self.display_image_with_boxes(self._active_image_index)
+            logger.info("Настройки обновлены и применены.")
+
+    def _setup_shortcuts(self):
+        """Настраивает все горячие клавиши."""
+        # Стрелки — переключение страниц
+        QShortcut(QKeySequence(Qt.Key_Left),  self, lambda: self.switch_image(-1))
+        QShortcut(QKeySequence(Qt.Key_Right), self, lambda: self.switch_image(1))
+
+        # Основные действия
+        QShortcut(QKeySequence("Ctrl+O"),       self, self.open_image)      # Открыть файлы
+        QShortcut(QKeySequence("Ctrl+Shift+O"), self, self.add_files)       # Добавить файлы
+        QShortcut(QKeySequence("Ctrl+F"),       self, self.find_seedlings)  # Найти сеянцы (текущая)
+        QShortcut(QKeySequence("Ctrl+Shift+F"), self, self.find_all_seedlings)  # Найти все
+        QShortcut(QKeySequence("Ctrl+C"),       self, self.classify)        # Классификация
+        QShortcut(QKeySequence("Ctrl+R"),       self, self.rotate_image)    # Повернуть 90°
+        QShortcut(QKeySequence("Ctrl+P"),       self, self.create_report)   # PDF-отчёт
+        QShortcut(QKeySequence("Ctrl+S"),       self, self.save_changes)    # Сохранить
+
+        # Зум
+        QShortcut(QKeySequence("Ctrl++"),       self, self.zoom_in)
+        QShortcut(QKeySequence("Ctrl+="),       self, self.zoom_in)   # для клавиш без NumPad
+        QShortcut(QKeySequence("Ctrl+-"),       self, self.zoom_out)
+        QShortcut(QKeySequence("Ctrl+0"),       self, self.fit_to_window)
+
+    def create_central_widget(self):
+        """Создаёт центральную область — изображение с возможностью зума и рамок."""
+        self.scroll_area = DraggableScrollArea()
+        self.scroll_area.setObjectName("centralScroll")
+        self.scroll_area.setWidgetResizable(True)
+
+        # Графическая сцена для отображения изображения и интерактивных боксов
+        self.graphics_scene = QGraphicsScene(self)
+        self.graphics_scene.setBackgroundBrush(
+            QColor(VIEW_BACKGROUND_R, VIEW_BACKGROUND_G, VIEW_BACKGROUND_B)
+        )
+        self.graphics_view = QGraphicsView(self.graphics_scene)
+        self.graphics_view.setObjectName("centralView")
+        self.graphics_view.setRenderHint(QPainter.Antialiasing)
+        self.graphics_view.setDragMode(QGraphicsView.ScrollHandDrag)  # перетаскивание рукой
+
+        self.image_item = QGraphicsPixmapItem()
+        self.graphics_scene.addItem(self.image_item)
+
+        self.rect_items = {}                     # для хранения BBoxItem
+
+        self.scroll_area.setWidget(self.graphics_view)
+
+    def create_right_panel(self):
+        """Создаёт правую панель с деревом слоёв."""
+        self.right_panel = QGroupBox("Слои")
+        self.right_panel.setObjectName("layersGroup")
+        self.right_panel.setMinimumWidth(PANEL_LAYERS_MIN_WIDTH)
+        self.right_panel.setMaximumWidth(PANEL_LAYERS_MAX_WIDTH)
+
+        layout = QVBoxLayout()
+        layout.setContentsMargins(*PANEL_LAYOUT_MARGINS)
+
+        # Дерево
+        self.tree_widget = LayerTreeWidget()
+        self.tree_widget.setObjectName("layerTree")
+        self.tree_widget.itemClicked.connect(self.on_tree_item_clicked)
+
+        # Скролл для дерева (если страниц много)
+        tree_scroll = QScrollArea()
+        tree_scroll.setWidgetResizable(True)
+        tree_scroll.setWidget(self.tree_widget)
+
+        layout.addWidget(tree_scroll)
+        self.right_panel.setLayout(layout)
+
+
 
     def _has_classified_parts(self) -> bool:
         if not self.image_storage.class_object_image:
@@ -174,102 +455,11 @@ class ImageEditor(QMainWindow):
                     return True
         return False
 
-    def create_toolbars(self):
-        toolbar = QToolBar("Toolbar", self)
-        toolbar.setOrientation(Qt.Vertical)
-        toolbar.setMovable(False)
-        toolbar.setFixedWidth(150)
-        toolbar.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
-        self.addToolBar(Qt.LeftToolBarArea, toolbar)
 
-        style = self.style()
 
-        self.mask_action = QAction(style.standardIcon(QStyle.SP_FileDialogNewFolder), "Создать маску", self)
-        self.mask_action.triggered.connect(self.create_mask)
-        toolbar.addAction(self.mask_action)
 
-        self.seedlings_action = QAction(style.standardIcon(QStyle.SP_MediaPlay), "Найти сеянцы", self)
-        self.seedlings_action.triggered.connect(self.find_seedlings)
-        toolbar.addAction(self.seedlings_action)
-
-        self.find_all_seedlings_action = QAction(style.standardIcon(QStyle.SP_DialogYesButton), "Найти все сеянцы", self)
-        self.find_all_seedlings_action.triggered.connect(self.find_all_seedlings)
-        toolbar.addAction(self.find_all_seedlings_action)
-
-        self.classify_action = QAction(style.standardIcon(QStyle.SP_FileDialogDetailedView), "Классификация", self)
-        self.classify_action.triggered.connect(self.classify)
-        toolbar.addAction(self.classify_action)
-
-        self.rotate_action = QAction(style.standardIcon(QStyle.SP_BrowserReload), "Повернуть на 90°", self)
-        self.rotate_action.triggered.connect(self.rotate_image)
-        toolbar.addAction(self.rotate_action)
-
-        toolbar.addSeparator()
-
-        self.report_action = QAction(style.standardIcon(QStyle.SP_FileDialogContentsView), "Создать отчет", self)
-        self.report_action.triggered.connect(self.create_report)
-        toolbar.addAction(self.report_action)
-
-        toolbar.addSeparator()
-
-        self.zoom_in_action = QAction(style.standardIcon(QStyle.SP_ArrowUp), "Приблизить", self)
-        self.zoom_in_action.triggered.connect(self.zoom_in)
-        toolbar.addAction(self.zoom_in_action)
-
-        self.zoom_out_action = QAction(style.standardIcon(QStyle.SP_ArrowDown), "Отдалить", self)
-        self.zoom_out_action.triggered.connect(self.zoom_out)
-        toolbar.addAction(self.zoom_out_action)
-
-        self.fit_action = QAction(style.standardIcon(QStyle.SP_DesktopIcon), "Вписать", self)
-        self.fit_action.triggered.connect(self.fit_to_window)
-        toolbar.addAction(self.fit_action)
-
-        toolbar.addSeparator()
-
-        self.save_action = QAction(style.standardIcon(QStyle.SP_DialogSaveButton), "Сохранить изменения", self)
-        self.save_action.triggered.connect(self.save_changes)
-        toolbar.addAction(self.save_action)
-
-        self._update_action_states()
-
-    def create_central_widget(self):
-        """Создаёт центральную область отображения изображений."""
-        self.scroll_area = DraggableScrollArea()
-        self.scroll_area.setWidgetResizable(True)
-
-        self.graphics_view = QGraphicsView()
-        self.graphics_scene = QGraphicsScene(self)
-        self.graphics_view.setScene(self.graphics_scene)
-        self.image_item = QGraphicsPixmapItem()
-        self.graphics_scene.addItem(self.image_item)
-        self.rect_items = {}
-
-        self.scroll_area.setWidget(self.graphics_view)
-
-        self.splitter = QSplitter(Qt.Horizontal)
-        self.splitter.addWidget(self.scroll_area)
-        self.setCentralWidget(self.splitter)
-
-    def create_right_panel(self):
-        """Создаёт правую панель с деревом слоёв."""
-        self.right_panel = QGroupBox("Слои")
-        self.right_panel.setMinimumWidth(200)
-        layout = QVBoxLayout()
-        self.tree_widget = LayerTreeWidget()
-
-        scroll_area = QScrollArea()
-        scroll_area.setWidgetResizable(True)
-        scroll_area.setWidget(self.tree_widget)
-        layout.addWidget(scroll_area)
-
-        self.tree_widget.itemClicked.connect(self.on_tree_item_clicked)
-
-        self.right_panel.setLayout(layout)
-        self.splitter.addWidget(self.right_panel)
-        self.splitter.setCollapsible(1, False)
 
     def on_tree_item_clicked(self, item, column):
-        """Обрабатывает выбор элемента в дереве слоёв."""
         item_data = item.data(0, Qt.UserRole)
         if item_data:
             if item_data["type"] in ("original", "pdf"):
@@ -287,42 +477,179 @@ class ImageEditor(QMainWindow):
                 class_idx = item_data["class_index"]
                 self._active_image_index = parent_idx
                 self.display_class_image(parent_idx, seed_idx, class_idx)
-            else:
-                return
+
+            self.update_left_info(item_data)   # ← обновляем левую панель
 
     def open_image(self) -> None:
-        """Открывает диалог выбора файла и загружает изображение или PDF."""
-        self.image_storage = OriginalImage()
-        self._update_action_states()
-        file_name, _ = QFileDialog.getOpenFileName(
+        """Открывает один или несколько файлов (изображения + PDF)."""
+        files, _ = QFileDialog.getOpenFileNames(
             self,
-            "Открыть изображение или PDF",
+            "Открыть изображения или PDF",
             "",
-            "Images (*.png *.jpg *.jpeg *.bmp);;PDF Files (*.pdf);;All Files (*)",
+            "Images (*.png *.jpg *.jpeg *.bmp *.tiff);;PDF Files (*.pdf);;All Files (*)",
         )
-        if file_name:
-            self.image_storage.file_path = file_name
-            self.image_storage.images.clear()
-            self.tree_widget.clear()
+        if not files:
+            return
 
-            if file_name.lower().endswith(".pdf"):
-                self.load_pdf(file_name)
+        self.image_storage = OriginalImage()
+        self.tree_widget.clear()
+        self.image_storage.file_path = files[0]  # для отчёта берём первый файл
+
+        for file_path in files:
+            if file_path.lower().endswith(".pdf"):
+                self._add_pdf(file_path)
             else:
-                image = self.load_image(file_name)
-                if image is not None:
-                    self.image_storage.images.append(image)
-                    self.display_image(image)
-                    self._active_image_index = 0
-                    self.tree_widget.add_root_item(
-                        "Оригинал", "Исходное изображение", 0, "original", image
-                    )
+                self._add_image(file_path)
 
-            # Обязательно инициализируем пустые списки для найденных объектов
-            self.image_storage.class_object_image = [
-                [] for _ in range(len(self.image_storage.images))
-            ]
+        self._finalize_after_load()
 
-        self._update_action_states()
+
+    def add_files(self) -> None:
+        """Добавляет новые файлы к уже открытому проекту."""
+        files, _ = QFileDialog.getOpenFileNames(
+            self,
+            "Добавить изображения или PDF",
+            "",
+            "Images (*.png *.jpg *.jpeg *.bmp *.tiff);;PDF Files (*.pdf);;All Files (*)",
+        )
+        if not files:
+            return
+
+        for file_path in files:
+            if file_path.lower().endswith(".pdf"):
+                self._add_pdf(file_path)
+            else:
+                self._add_image(file_path)
+
+        self._finalize_after_load()
+
+    def _add_image(self, file_path: str):
+        """Добавляет одно изображение."""
+        image = self.load_image(file_path)
+        if image is None:
+            QMessageBox.warning(
+                self,
+                "Ошибка загрузки",
+                f"Не удалось загрузить изображение:\n{file_path}",
+            )
+            return
+
+        idx = len(self.image_storage.images)
+        self.image_storage.images.append(image)
+
+        if self.image_storage.class_object_image is None:
+            self.image_storage.class_object_image = []
+        self.image_storage.class_object_image.append([])
+
+        name = os.path.basename(file_path)
+        self.tree_widget.add_root_item(
+            name, "Изображение", idx, "original", image
+        )
+
+    def _add_pdf(self, pdf_path: str):
+        """Добавляет все страницы PDF."""
+        try:
+            doc = fitz.open(pdf_path)
+            base_idx = len(self.image_storage.images)
+
+            self.progress_bar.setVisible(True)
+            self.progress_bar.setRange(0, doc.page_count)
+
+            for page_num in range(doc.page_count):
+                page = doc.load_page(page_num)
+                mat = fitz.Matrix(PDF_RENDER_SCALE, PDF_RENDER_SCALE)
+                pix = page.get_pixmap(matrix=mat)
+                img = np.frombuffer(pix.samples, dtype=np.uint8).reshape(
+                    pix.height, pix.width, pix.n
+                )
+                if pix.n == 4:
+                    img = img[:, :, :3].copy()
+                img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+
+                self.image_storage.images.append(img)
+
+                if self.image_storage.class_object_image is None:
+                    self.image_storage.class_object_image = []
+                self.image_storage.class_object_image.append([])
+
+                name = f"{os.path.basename(pdf_path)} — стр. {page_num + 1}"
+                self.tree_widget.add_root_item(
+                    name, "Страница PDF", base_idx + page_num, "pdf", img
+                )
+
+                self.progress_bar.setValue(page_num + 1)
+
+            doc.close()
+            self.progress_bar.setVisible(False)
+
+        except Exception as e:
+            logger.error("Ошибка при загрузке PDF %s: %s", pdf_path, e)
+            QMessageBox.critical(
+                self,
+                "Ошибка загрузки PDF",
+                f"Не удалось загрузить PDF:\n{pdf_path}\n\n{e}",
+            )
+
+    def _finalize_after_load(self):
+        """Общие действия после открытия/добавления файлов."""
+        if not self.image_storage.class_object_image:
+            self.image_storage.class_object_image = [[] for _ in self.image_storage.images]
+
+
+
+        if self.image_storage.images:
+            self._active_image_index = 0
+            self.display_image_with_boxes(0)
+            self.update_left_info({"type": "original", "index": 0})
+
+    def _show_page_stats(self, idx: int):
+        if (not self.image_storage.class_object_image or
+                idx >= len(self.image_storage.class_object_image)):
+            self.info_text.setHtml(
+                '<p style="font-size:14px; margin:0;">'
+                f'<b>Страница {idx + 1}</b></p>'
+                '<p style="color:#9ca3af; margin-top:12px;">Нет сеянцев</p>'
+            )
+            return
+
+        objs: list[ObjectImage] = self.image_storage.class_object_image[idx]
+        total = len(objs)
+
+        high = sum(1 for o in objs if o.confidence >= cfg.CONF_THRESHOLD_HIGH)
+        medium = sum(1 for o in objs if cfg.CONF_THRESHOLD_LOW <= o.confidence < cfg.CONF_THRESHOLD_HIGH)
+        critical = total - high - medium
+
+        html = f"""
+        <p style="font-size:15px; font-weight:600; margin:0 0 16px 0;">Страница {idx + 1}</p>
+        <p style="margin:8px 0;"><b>Всего сеянцев:</b> <span style="color:#22c55e;">{total}</span></p>
+        <p style="margin:6px 0;"><span style="color:#4ade80;">●</span> Хорошо (≥{cfg.CONF_THRESHOLD_HIGH}): <b>{high}</b></p>
+        <p style="margin:6px 0;"><span style="color:#fbbf24;">●</span> Средне ({cfg.CONF_THRESHOLD_LOW}–{cfg.CONF_THRESHOLD_HIGH}): <b>{medium}</b></p>
+        <p style="margin:6px 0;"><span style="color:#f87171;">●</span> Критично (&lt;{cfg.CONF_THRESHOLD_LOW}): <b>{critical}</b></p>
+        """
+        self.info_text.setHtml(html)
+
+    def _show_seeding_info(self, parent_idx: int, seed_idx: int):
+        obj = self.image_storage.class_object_image[parent_idx][seed_idx]
+
+        html = f"""
+        <p style="font-size:15px; font-weight:600; margin:0 0 12px 0;">Сеянец {seed_idx + 1}</p>
+        <p style="margin:6px 0;"><b>Уверенность:</b> <span style="color:#22c55e;">{obj.confidence:.3f}</span></p>
+        <p style="margin:6px 0; font-family:monospace;"><b>BBox:</b> {obj.bbox}</p>
+        <p style="margin:6px 0;"><b>Поворот:</b> {obj.rotation_k * ROTATE_ANGLE_DEG}°</p>
+        """
+
+        if obj.image_all_class:
+            html += '<p style="margin-top:12px;"><b>Классификация:</b></p>'
+            for cls in obj.image_all_class:
+                color = (
+                    "#4ade80" if cls.confidence >= CONF_DISPLAY_HIGH
+                    else "#fbbf24" if cls.confidence >= CONF_DISPLAY_MEDIUM
+                    else "#f87171"
+                )
+                html += f'<p style="margin:4px 0;"><span style="color:{color}">●</span> {cls.class_name}: {cls.confidence:.3f}</p>'
+
+        self.info_text.setHtml(html)
+
 
     def load_image(self, file_name: str) -> np.ndarray | None:
         """Загружает изображение с диска."""
@@ -342,7 +669,7 @@ class ImageEditor(QMainWindow):
             self.progress_bar.setValue(0)
             for page_num in range(doc.page_count):
                 page = doc.load_page(page_num)
-                mat = fitz.Matrix(4, 4)  # 2x масштаб
+                mat = fitz.Matrix(PDF_RENDER_SCALE, PDF_RENDER_SCALE)  # 2x масштаб
                 pix = page.get_pixmap(matrix=mat)
                 img = np.frombuffer(pix.samples, dtype=np.uint8).reshape(
                     pix.height, pix.width, pix.n
@@ -410,12 +737,12 @@ class ImageEditor(QMainWindow):
 
     def zoom_in(self) -> None:
         """Увеличивает изображение."""
-        self.zoom_factor *= 1.25
+        self.zoom_factor *= ZOOM_FACTOR_INCREMENT
         self.update_image_zoom()
 
     def zoom_out(self) -> None:
         """Уменьшает изображение."""
-        self.zoom_factor /= 1.25
+        self.zoom_factor /= ZOOM_FACTOR_INCREMENT
         if self.zoom_factor < self.min_fit_zoom:
             self.zoom_factor = self.min_fit_zoom
         self.update_image_zoom()
@@ -440,7 +767,7 @@ class ImageEditor(QMainWindow):
 
     def rotate_image(self) -> None:
         """Поворачивает выбранное изображение или crop на 90 градусов."""
-        self._update_action_states()
+
         selected_item = self.tree_widget.currentItem()
         if selected_item is None:
             logger.warning("rotate_image: Нет выбранного элемента в дереве")
@@ -510,7 +837,7 @@ class ImageEditor(QMainWindow):
             for box in results[0].boxes:
                 class_id = int(box.cls)
                 class_name = results[0].names[class_id]
-                if str(class_name).lower() != "seeding":
+                if str(class_name).lower() != DETECTION_CLASS_NAME:
                     continue
 
                 score = float(box.conf)
@@ -543,7 +870,7 @@ class ImageEditor(QMainWindow):
             logger.info(
                 "find_seedlings: найдено %s боксов, запускаем NMS", len(boxes)
             )
-            indices = simple_nms(boxes, scores, iou_threshold=0.4)
+            indices = simple_nms(boxes, scores, iou_threshold=NMS_IOU_THRESHOLD)
             logger.info(
                 "find_seedlings: после NMS осталось %s боксов", len(indices)
             )
@@ -579,6 +906,7 @@ class ImageEditor(QMainWindow):
                     crop,
                 )
             self.display_image_with_boxes(index)
+            self.update_left_info({"type": "pdf", "index": index})  # ← добавь эту строку
             logger.info("find_seedlings: завершено")
         except Exception as e:  # pragma: no cover - логирование
             logger.error("Ошибка во время NMS или обработки результатов: %s", e)
@@ -591,7 +919,7 @@ class ImageEditor(QMainWindow):
         слоёв. Если ширина вырезанного участка больше его высоты, изображение
         поворачивается на 90 градусов для вертикальной ориентации.
         """
-        self._update_action_states()
+
         if self.image_storage.class_object_image is None:
             self.image_storage.class_object_image = [
                 [] for _ in range(len(self.image_storage.images))
@@ -601,6 +929,13 @@ class ImageEditor(QMainWindow):
         current_index = getattr(self, "_active_image_index", 0)
         logger.debug("find_seedlings: current_index = %s", current_index)
 
+        if self.model is None:
+            QMessageBox.warning(
+                self,
+                "Модель не загружена",
+                "Модель детекции не загружена. Проверьте путь к весам.",
+            )
+            return
         if not self.image_storage.images:
             logger.warning("find_seedlings: Нет изображений для обработки")
             return
@@ -634,7 +969,14 @@ class ImageEditor(QMainWindow):
         обновляется последовательно.
         """
 
-        self._update_action_states()
+
+        if self.model is None:
+            QMessageBox.warning(
+                self,
+                "Модель не загружена",
+                "Модель детекции не загружена. Проверьте путь к весам.",
+            )
+            return
         if not self.image_storage.images:
             logger.warning("find_all_seedlings: Нет изображений")
             return
@@ -657,77 +999,59 @@ class ImageEditor(QMainWindow):
             self._on_detection_result(idx, results)
 
             self.progress_bar.setValue(idx + 1)
+            if hasattr(self, "_active_image_index"):
+                self.update_left_info({"type": "pdf", "index": self._active_image_index})
 
         self.progress_bar.setVisible(False)
         self.progress_bar.setRange(0, 1)
         self.progress_bar.setValue(0)
         logger.info("find_all_seedlings: завершено")
 
-    def display_image_with_boxes(self, idx: int) -> None:
-        """Отображает изображение с нанесёнными рамками объектов."""
-        image = self.image_storage.images[idx].copy()
-        self.display_image(image)
-        if (
-            self.image_storage.class_object_image
-            and len(self.image_storage.class_object_image) > idx
-        ):
-            for obj_idx, obj in enumerate(self.image_storage.class_object_image[idx]):
-                if obj.bbox:
-                    x1, y1, x2, y2 = obj.bbox
-                    rect = QRectF(x1, y1, x2 - x1, y2 - y1)
-                    rect_item = BBoxItem(rect, obj)
-                    rect_item.setEditable(True)
-                    self.graphics_scene.addItem(rect_item)
-                    self.rect_items[(idx, obj_idx)] = rect_item
-
-
-
-    def display_seeding_with_boxes(self, parent_idx: int, seed_idx: int) -> None:
-        """Отображает crop сеянца с его классификационными боксами."""
-        if (
-            not self.image_storage.class_object_image
-            or parent_idx >= len(self.image_storage.class_object_image)
-            or seed_idx >= len(self.image_storage.class_object_image[parent_idx])
-        ):
+    def display_image_with_boxes(self, img_idx: int, seeding_idx: int = None):
+        """
+        Универсальный метод отрисовки.
+        Если seeding_idx is None — рисуем оригинал и рамки сеянцев.
+        Если seeding_idx задан — рисуем кроп сеянца и рамки его частей.
+        """
+        if img_idx >= len(self.image_storage.images):
             return
 
-        obj = self.image_storage.class_object_image[parent_idx][seed_idx]
-        if not obj.image:
-            return
+        # 1. Выбираем базовое изображение для отрисовки
+        if seeding_idx is None:
+            base_img = self.image_storage.images[img_idx]
+            objects_to_draw = self.image_storage.class_object_image[img_idx]
+            is_crop_view = False
+        else:
+            obj = self.image_storage.class_object_image[img_idx][seeding_idx]
+            base_img = obj.image[0]
+            objects_to_draw = obj.image_all_class or []
+            is_crop_view = True
 
-        crop_img = obj.image[0].copy()
-        self.display_image(crop_img)
+        self.display_image(base_img)
 
-        if obj.image_all_class:
-            for cls_idx, cls_obj in enumerate(obj.image_all_class):
-                if cls_obj.bbox:
-                    lx1, ly1, lx2, ly2 = cls_obj.bbox
-                    rect = QRectF(lx1, ly1, lx2 - lx1, ly2 - ly1)
-                    rect_item = BBoxItem(rect, cls_obj, color=Qt.red)
-                    rect_item.setEditable(True)
-                    self.graphics_scene.addItem(rect_item)
-                    self.rect_items[(parent_idx, seed_idx, cls_idx)] = rect_item
+        # 2. Отрисовываем рамки (BBoxItem)
+        for i, obj in enumerate(objects_to_draw):
+            if obj.bbox:
+                x1, y1, x2, y2 = obj.bbox
+                rect = QRectF(x1, y1, x2 - x1, y2 - y1)
 
-    def display_class_image(
-        self, parent_idx: int, seed_idx: int, class_idx: int
-    ) -> None:
-        """Отображает вырез конкретного класса внутри сеянца."""
-        if (
-            not self.image_storage.class_object_image
-            or parent_idx >= len(self.image_storage.class_object_image)
-            or seed_idx >= len(self.image_storage.class_object_image[parent_idx])
-        ):
-            return
+                # Создаем универсальный BBoxItem
+                # Передаем сам объект 'obj', чтобы BBoxItem мог менять его координаты
+                item = BBoxItem(rect, obj)
+                item.setEditable(True)
+                self.graphics_scene.addItem(item)
+                self.rect_items[i] = item
 
-        obj = self.image_storage.class_object_image[parent_idx][seed_idx]
-        if not obj.image_all_class or class_idx >= len(obj.image_all_class):
-            return
 
-        cls_obj = obj.image_all_class[class_idx]
-        if cls_obj.image is None:
-            return
 
-        self.display_image(cls_obj.image)
+    def display_seeding_with_boxes(self, parent_idx: int, seed_idx: int):
+        """Перегрузка для отображения конкретного сеянца."""
+        self.display_image_with_boxes(parent_idx, seeding_idx=seed_idx)
+
+    def display_class_image(self, parent_idx, seed_idx, class_idx):
+        """Отображение конкретной части (зум на часть на кропе сеянца)."""
+        # Просто вызываем отрисовку кропа сеянца, рамки частей подгрузятся сами
+        self.display_image_with_boxes(parent_idx, seeding_idx=seed_idx)
 
     def save_changes(self) -> None:
         """Пересохраняет crop-изображения после изменения рамок."""
@@ -770,108 +1094,84 @@ class ImageEditor(QMainWindow):
         logger.info("save_changes: обновлённые координаты сохранены")
 
     def classify(self) -> None:
-        """Определяет для каждого сеянца классы: flower, root и stem."""
-        self._update_action_states()
-
+        """Классификация частей растения (цветок, корень, стебель)."""
         if not self.image_storage.class_object_image:
-            logger.warning("classify: Нет объектов для классификации")
+            logger.warning("classify: Сначала найдите сеянцы")
             return
 
         if self.classify_model is None:
             try:
-                self.classify_model = YOLO(str(DEFAULT_CLASSIFY_WEIGHTS_PATH))
-                model_names = self.classify_model.names
-                loaded_names = (
-                    list(model_names.values())
-                    if isinstance(model_names, dict)
-                    else list(model_names)
+                self.classify_model = YOLO(DEFAULT_CLASSIFY_WEIGHTS_PATH)
+            except Exception as e:
+                logger.exception("Не удалось загрузить модель классификации: %s", e)
+                QMessageBox.critical(
+                    self,
+                    "Ошибка загрузки модели",
+                    f"Не удалось загрузить модель классификации:\n{DEFAULT_CLASSIFY_WEIGHTS_PATH}\n\n{e}",
                 )
-                if set(loaded_names) != set(EXPECTED_CLASSIFY_NAMES):  # pragma: no cover - логирование
-                    logger.error(
-                        "classify: unexpected class names %s, expected %s",
-                        loaded_names,
-                        EXPECTED_CLASSIFY_NAMES,
-                    )
-                    self.classify_model = None
-                    return
-            except Exception as e:  # pragma: no cover - логирование
-                logger.error("Не удалось загрузить модель классификации: %s", e)
-                self.classify_model = None
                 return
 
+        logger.info("classify: старт вторичной классификации")
+
+        # Проходим по всем изображениям и всем найденным сеянцам
         for img_idx, objects in enumerate(self.image_storage.class_object_image):
-            page_item = self.tree_widget.topLevelItem(img_idx)
-            for obj_idx, obj in enumerate(objects):
-                if not obj.image:
-                    continue
-                crop = obj.image[0]
-                try:
-                    result = self.classify_model(crop)[0]
-                except Exception as e:  # pragma: no cover - логирование
-                    logger.error("Ошибка классификации: %s", e)
+            for obj_idx, seeding_obj in enumerate(objects):
+                if not seeding_obj.image:
                     continue
 
-                boxes = result.boxes
-                if boxes is None or len(boxes) == 0:
-                    logger.debug("classify: не найден класс для объекта %s", obj_idx)
-                    continue
+                # Запуск модели на кропе сеянца
+                results = self.classify_model(seeding_obj.image[0])
 
-                detections = list(
-                    zip(boxes.cls.tolist(), boxes.conf.tolist(), boxes.xyxy.tolist())
-                )
-                detections.sort(key=lambda x: x[1], reverse=True)
+                # Важно: инициализируем список, если он пуст, чтобы избежать вылета
+                if seeding_obj.image_all_class is None:
+                    seeding_obj.image_all_class = []
+                else:
+                    seeding_obj.image_all_class.clear()
 
-                obj.image_all_class = []
-                seeding_item = page_item.child(obj_idx) if page_item is not None else None
-                if seeding_item is not None:
-                    for i in reversed(range(seeding_item.childCount())):
-                        seeding_item.takeChild(i)
+                # Ищем соответствующий элемент в дереве для добавления детей
+                parent_item = self.tree_widget.topLevelItem(img_idx).child(obj_idx)
 
-                names = self.classify_model.names
-                for cls_idx, (cls_id, conf, coords) in enumerate(detections):
-                    cls_id = int(cls_id)
-                    conf = float(conf)
-                    x1, y1, x2, y2 = map(int, coords)
-                    part_img = crop[y1:y2, x1:x2].copy()
-                    class_name = (
-                        names.get(cls_id, str(cls_id))
-                        if isinstance(names, dict)
-                        else (
-                            names[cls_id] if 0 <= cls_id < len(names) else str(cls_id)
-                        )
-                    )
+                for result in results:
+                    for box in result.boxes:
+                        conf = float(box.conf)
+                        cls_id = int(box.cls)
+                        class_name = result.names[cls_id]
 
-                    local_bbox = (x1, y1, x2, y2)
+                        # Координаты части относительно кропа
+                        coords = box.xyxy[0].cpu().numpy().astype(int)
+                        local_bbox = (coords[0], coords[1], coords[2], coords[3])
 
-                    obj.image_all_class.append(
-                        AllClassImage(
+                        # Вырезаем изображение части
+                        part_img = seeding_obj.image[0][coords[1]:coords[3], coords[0]:coords[2]]
+
+                        # Создаем объект части
+                        new_part = AllClassImage(
                             class_name=class_name,
                             confidence=conf,
                             image=part_img,
-                            bbox=local_bbox,
+                            bbox=local_bbox
                         )
-                    )
+                        seeding_obj.image_all_class.append(new_part)
 
-                    if seeding_item is not None:
-                        self.tree_widget.add_class_item(
-                            seeding_item,
-                            class_name,
-                            f"Уверенность: {conf:.2f}",
-                            img_idx,
-                            obj_idx,
-                            cls_idx,
-                        )
+                        # Добавляем в дерево
+                        if parent_item:
+                            self.tree_widget.add_class_item(
+                                parent_item,
+                                class_name,
+                                f"Уверенность: {conf:.2f}",
+                                img_idx,
+                                obj_idx,
+                                len(seeding_obj.image_all_class) - 1
+                            )
 
-        active_idx = getattr(self, "_active_image_index", 0)
-        self.display_image_with_boxes(active_idx)
-        self._update_action_states()
-        logger.info("classify: завершено")
+        # Обновляем текущий вид
+        self.display_image_with_boxes(self._active_image_index)
+        logger.info("classify: успешно завершено")
 
 
 
     def create_report(self) -> None:
         """Создаёт PDF-отчёт по текущим результатам детекции."""
-        self._update_action_states()
         if not self.image_storage.images:
             logger.warning("create_report: Нет данных для отчёта")
             return
@@ -883,5 +1183,15 @@ class ImageEditor(QMainWindow):
 
             create_pdf_report(self.image_storage, output_path)
             logger.info("Отчёт сохранён: %s", output_path)
+            QMessageBox.information(
+                self,
+                "Отчёт создан",
+                f"Отчёт сохранён:\n{output_path}",
+            )
         except Exception as e:
-            logger.error("Ошибка при создании отчёта: %s", e)
+            logger.exception("Ошибка при создании отчёта: %s", e)
+            QMessageBox.critical(
+                self,
+                "Ошибка создания отчёта",
+                f"Не удалось создать PDF-отчёт:\n{e}",
+            )

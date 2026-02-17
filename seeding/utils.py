@@ -1,12 +1,18 @@
-"""Вспомогательные функции для обработки изображений."""
+"""Вспомогательные функции для обработки изображений.
+
+Содержит simple_nms (non-maximum suppression) и rotate_bbox для геометрии боксов.
+"""
 
 import logging
+
 import numpy as np
+
+from seeding.config import NMS_IOU_THRESHOLD
 
 logger = logging.getLogger(__name__)
 
 
-def simple_nms(boxes, scores, iou_threshold=0.4):
+def simple_nms(boxes, scores, iou_threshold=None):
     """Простейшая реализация non-maximum suppression.
 
     Args:
@@ -17,6 +23,8 @@ def simple_nms(boxes, scores, iou_threshold=0.4):
     Returns:
         List[int]: Индексы боксов, которые следует оставить.
     """
+    if iou_threshold is None:
+        iou_threshold = NMS_IOU_THRESHOLD
     if not boxes:
         logger.debug("simple_nms: пустой список боксов")
         return []

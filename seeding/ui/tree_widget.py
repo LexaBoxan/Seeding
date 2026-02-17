@@ -1,7 +1,10 @@
-"""Дерево слоёв для отображения оригиналов и найденных объектов."""
+"""Дерево слоёв для отображения оригиналов и найденных объектов.
 
-from PyQt5.QtWidgets import QTreeWidget, QTreeWidgetItem, QAbstractItemView
+LayerTreeWidget отображает иерархию: страницы PDF/изображения → сеянцы → части.
+"""
+
 from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QAbstractItemView, QTreeWidget, QTreeWidgetItem
 
 
 class LayerTreeWidget(QTreeWidget):

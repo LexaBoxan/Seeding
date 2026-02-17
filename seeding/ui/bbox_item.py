@@ -1,27 +1,51 @@
-"""Resizable rectangle item for interactive bounding boxes."""
+"""Интерактивный прямоугольник для отображения bounding box.
+
+Поддерживает изменение размера, перемещение и цветовую индикацию
+по уровню уверенности детекции (зелёный / оранжевый / красный).
+"""
 
 from PyQt5.QtCore import QRectF, Qt
-from PyQt5.QtGui import QPen
+from PyQt5.QtGui import QPen, QColor
 from PyQt5.QtWidgets import QGraphicsItem, QGraphicsRectItem, QStyleOptionGraphicsItem, QWidget
+
+import seeding.config as cfg
+
+# Толщина пера рамки
+BBOX_PEN_WIDTH = 2
+
+
+def get_color_by_confidence(conf: float) -> QColor:
+    """Возвращает цвет рамки по уровню уверенности."""
+    if conf >= cfg.CONF_THRESHOLD_HIGH:
+        return QColor(Qt.green)
+    if conf >= cfg.CONF_THRESHOLD_LOW:
+        return QColor(*cfg.BBOX_COLOR_ORANGE_RGB)
+    return QColor(Qt.red)
 
 
 class BBoxItem(QGraphicsRectItem):
-    """QGraphicsRectItem with resize handles linked to ObjectImage."""
+    """
+    Универсальный интерактивный прямоугольник.
+    Связывается с объектами ObjectImage (сеянцы) или AllClassImage (части).
+    """
 
-    HANDLE_SIZE = 8.0
+    HANDLE_SIZE = 8.0  # Размер ручек изменения размера (px)
 
     def __init__(
         self,
         rect: QRectF,
         obj,
         parent: QGraphicsItem | None = None,
-        color=Qt.green,
         offset=(0, 0),
     ):
         super().__init__(rect, parent)
-        self.obj = obj
+        self.obj = obj  # Может быть ObjectImage или AllClassImage
         self.offset = offset
-        self.setPen(QPen(color, 2))
+
+        # Цвет рамки по уверенности
+        color = get_color_by_confidence(getattr(obj, "confidence", 0.0))
+        self.setPen(QPen(color, BBOX_PEN_WIDTH))
+
         self.setFlags(
             QGraphicsItem.ItemIsSelectable
             | QGraphicsItem.ItemIsMovable
@@ -32,10 +56,8 @@ class BBoxItem(QGraphicsRectItem):
         self._handles = {}
         self._update_handles()
 
-    # ------------------------------------------------------------------
-    # handle utilities
     def _update_handles(self) -> None:
-        """Recalculate handle rectangles."""
+        """Пересчет координат ручек изменения размера."""
         r = self.rect()
         s = self.HANDLE_SIZE
         self._handles = {
@@ -46,22 +68,20 @@ class BBoxItem(QGraphicsRectItem):
         }
 
     def setEditable(self, state: bool) -> None:
-        """Enable or disable editing."""
         self._editable = state
         self.setFlag(QGraphicsItem.ItemIsMovable, state)
         self.update()
 
-    # ------------------------------------------------------------------
-    # painting
     def paint(self, painter, option: QStyleOptionGraphicsItem, widget: QWidget | None = None):
+        # Рисуем основную рамку
         super().paint(painter, option, widget)
+        # Если включен режим редактирования, рисуем белые квадратики по углам
         if self._editable:
             painter.setBrush(Qt.white)
+            painter.setPen(QPen(Qt.black, 1))
             for handle_rect in self._handles.values():
                 painter.drawRect(handle_rect)
 
-    # ------------------------------------------------------------------
-    # mouse events
     def mousePressEvent(self, event):
         if self._editable:
             for name, rect in self._handles.items():
@@ -85,6 +105,7 @@ class BBoxItem(QGraphicsRectItem):
             self.setRect(r)
         else:
             super().mouseMoveEvent(event)
+
         if self._editable:
             self._update_handles()
             self.update_bbox()
@@ -96,14 +117,14 @@ class BBoxItem(QGraphicsRectItem):
             self._update_handles()
             self.update_bbox()
 
-    # ------------------------------------------------------------------
     def update_bbox(self) -> None:
-        """Update bbox in linked ObjectImage."""
+        """Обновляет координаты bbox в связанном объекте данных."""
         r = self.rect().normalized()
         ox, oy = self.offset
+        # Записываем новые координаты обратно в объект (сеянец или часть)
         self.obj.bbox = (
-            int(r.left()) + ox,
-            int(r.top()) + oy,
-            int(r.right()) + ox,
-            int(r.bottom()) + oy,
+            int(r.left() + ox),
+            int(r.top() + oy),
+            int(r.right() + ox),
+            int(r.bottom() + oy),
         )

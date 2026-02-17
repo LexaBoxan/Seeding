@@ -4,14 +4,13 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="300734ec-daa0-4c66-b3b7-98db00b5250b" name="Changes" comment="Add files via upload">
+    <list default="true" id="300734ec-daa0-4c66-b3b7-98db00b5250b" name="Changes" comment="Начало работы в 8 семестре">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/seeding/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/seeding/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/seeding/application/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/seeding/application/pipeline.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/seeding/application/root_analysis.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/seeding/models/data_models.py" beforeDir="false" afterPath="$PROJECT_DIR$/seeding/models/data_models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/seeding/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/seeding/config.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/seeding/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/seeding/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/seeding/ui/bbox_item.py" beforeDir="false" afterPath="$PROJECT_DIR$/seeding/ui/bbox_item.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/seeding/ui/main_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/seeding/ui/main_window.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/seeding/ui/settings_dialog.py" beforeDir="false" afterPath="$PROJECT_DIR$/seeding/ui/settings_dialog.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -189,6 +188,7 @@
       <workItem from="1764657387191" duration="25000" />
       <workItem from="1765866941937" duration="30000" />
       <workItem from="1765945947821" duration="1923000" />
+      <workItem from="1771296798970" duration="381000" />
     </task>
     <task id="LOCAL-00001" summary="Add files via upload">
       <option name="closed" value="true" />
@@ -198,7 +198,15 @@
       <option name="project" value="LOCAL" />
       <updated>1755853496539</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="Начало работы в 8 семестре">
+      <option name="closed" value="true" />
+      <created>1771227005385</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1771227005385</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -217,13 +225,14 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Add files via upload" />
-    <option name="LAST_COMMIT_MESSAGE" value="Add files via upload" />
+    <MESSAGE value="Начало работы в 8 семестре" />
+    <option name="LAST_COMMIT_MESSAGE" value="Начало работы в 8 семестре" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/Seeding$image_processor.coverage" NAME="image_processor Coverage Results" MODIFIED="1755499384227" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/seeding/processing" />
     <SUITE FILE_PATH="coverage/Seeding$sam_folder_annotator.coverage" NAME="sam_folder_annotator Coverage Results" MODIFIED="1764093276831" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/TestProg" />
     <SUITE FILE_PATH="coverage/Seeding$shuffle.coverage" NAME="shuffle Coverage Results" MODIFIED="1764256181179" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/TestProg" />
-    <SUITE FILE_PATH="coverage/Seeding$main.coverage" NAME="main Coverage Results" MODIFIED="1771226690480" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/seeding" />
+    <SUITE FILE_PATH="coverage/Seeding$main.coverage" NAME="main Coverage Results" MODIFIED="1771296834786" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/seeding" />
     <SUITE FILE_PATH="coverage/Seeding$TrainYOLOanalisis.coverage" NAME="TrainYOLOanalisis Coverage Results" MODIFIED="1766387740373" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/TestProg" />
     <SUITE FILE_PATH="coverage/Seeding$process_pdf_and_save_crops.coverage" NAME="process_pdf_and_save_crops Coverage Results" MODIFIED="1764223841140" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/TestProg" />
     <SUITE FILE_PATH="coverage/Seeding$config.coverage" NAME="config Результаты покрытия" MODIFIED="1752835721457" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/seeding" />

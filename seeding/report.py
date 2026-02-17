@@ -1,10 +1,12 @@
-"""Утилиты для формирования PDF-отчёта."""
+"""Утилиты для формирования PDF-отчёта.
+
+Создаёт структурированный PDF с аннотированными изображениями,
+таблицами характеристик и уменьшенными кропами найденных объектов.
+"""
 
 from __future__ import annotations
 
 import io
-
-from typing import Iterable
 
 import cv2
 import numpy as np
@@ -23,6 +25,20 @@ from reportlab.platypus import (
     TableStyle,
 )
 
+from seeding.config import (
+    PDF_BBOX_COLOR_CLASS,
+    PDF_BBOX_COLOR_MAIN,
+    PDF_BBOX_THICKNESS,
+    PDF_CROP_MAX_HEIGHT_MM,
+    PDF_CROP_MAX_WIDTH_MM,
+    PDF_FONT_SCALE,
+    PDF_IMAGE_MAX_HEIGHT_MM,
+    PDF_IMAGE_MAX_WIDTH_MM,
+    PDF_JPEG_QUALITY,
+    PDF_LABEL_OFFSET_Y,
+    PDF_CROPS_PER_PAGE,
+    PDF_SPACER_MM,
+)
 from seeding.models.data_models import ObjectImage, OriginalImage
 from seeding.utils import rotate_bbox
 
@@ -47,15 +63,17 @@ def _annotate_image(img: np.ndarray, objects: list[ObjectImage]) -> np.ndarray:
     for i, obj in enumerate(objects, start=1):
         if obj.bbox:
             x1, y1, x2, y2 = obj.bbox
-            cv2.rectangle(annotated, (x1, y1), (x2, y2), (0, 255, 0), 2)
+            cv2.rectangle(
+                annotated, (x1, y1), (x2, y2), PDF_BBOX_COLOR_MAIN, PDF_BBOX_THICKNESS
+            )
             cv2.putText(
                 annotated,
                 str(i),
-                (x1, max(y1 - 5, 0)),
+                (x1, max(y1 - PDF_LABEL_OFFSET_Y, 0)),
                 cv2.FONT_HERSHEY_SIMPLEX,
-                0.8,
-                (0, 255, 0),
-                2,
+                PDF_FONT_SCALE,
+                PDF_BBOX_COLOR_MAIN,
+                PDF_BBOX_THICKNESS,
             )
         if obj.image_all_class and obj.bbox:
             k = getattr(obj, "rotation_k", 0) % 4
@@ -73,11 +91,14 @@ def _annotate_image(img: np.ndarray, objects: list[ObjectImage]) -> np.ndarray:
                     y1 = obj.bbox[1] + uy1
                     x2 = obj.bbox[0] + ux2
                     y2 = obj.bbox[1] + uy2
-                    cv2.rectangle(annotated, (x1, y1), (x2, y2), (255, 0, 0), 2)
+                    cv2.rectangle(
+                        annotated, (x1, y1), (x2, y2),
+                        PDF_BBOX_COLOR_CLASS, PDF_BBOX_THICKNESS
+                    )
     return annotated
 
 
-def _pil_to_buf(image: Image.Image, *, quality: int = 70) -> io.BytesIO:
+def _pil_to_buf(image: Image.Image, *, quality: int = None) -> io.BytesIO:
     """Сохраняет изображение в буфер JPEG для вставки в PDF.
 
     Args:
@@ -87,6 +108,8 @@ def _pil_to_buf(image: Image.Image, *, quality: int = 70) -> io.BytesIO:
     Returns:
         Буфер с JPEG-данными.
     """
+    if quality is None:
+        quality = PDF_JPEG_QUALITY
     buffer = io.BytesIO()
     image.save(buffer, format="JPEG", quality=quality)
     buffer.seek(0)
@@ -124,6 +147,7 @@ def _rl_image_from_pil(image: Image.Image, max_w: float, max_h: float) -> RLImag
         width_pt = height_pt / aspect
     return RLImage(_pil_to_buf(image), width=width_pt, height=height_pt)
 
+
 def create_pdf_report(data: OriginalImage, output_path: str) -> None:
     """Создаёт PDF-отчёт с результатами детекции.
 
@@ -146,11 +170,11 @@ def create_pdf_report(data: OriginalImage, output_path: str) -> None:
 
         story.append(Paragraph(f"Страница {idx + 1}", styles["Heading1"]))
 
-        max_width = 160 * mm
-        max_height = 200 * mm
+        max_width = PDF_IMAGE_MAX_WIDTH_MM * mm
+        max_height = PDF_IMAGE_MAX_HEIGHT_MM * mm
         img_elem = _rl_image_from_pil(pil_img, max_width, max_height)
         story.append(img_elem)
-        story.append(Spacer(1, 5 * mm))
+        story.append(Spacer(1, PDF_SPACER_MM * mm))
 
         table_data = [["#", "Class", "Confidence", "BBox"]]
         for i, obj in enumerate(objs, start=1):
@@ -163,11 +187,12 @@ def create_pdf_report(data: OriginalImage, output_path: str) -> None:
             ])
 
         table = Table(table_data, hAlign="LEFT")
+        _grid_width = 0.5
         table.setStyle(
             TableStyle(
                 [
                     ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
-                    ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+                    ("GRID", (0, 0), (-1, -1), _grid_width, colors.grey),
                     ("ALIGN", (1, 1), (-1, -1), "CENTER"),
                 ]
             )
@@ -175,16 +200,17 @@ def create_pdf_report(data: OriginalImage, output_path: str) -> None:
         story.append(table)
         story.append(PageBreak())
 
-        obj_per_page = 3
         for i, obj in enumerate(objs, start=1):
             pil_obj = _object_to_pil(obj)
             if pil_obj is None:
                 continue
             story.append(Paragraph(f"Объект {i}", styles["Heading3"]))
-            crop_elem = _rl_image_from_pil(pil_obj, 60 * mm, 80 * mm)
+            crop_elem = _rl_image_from_pil(
+                pil_obj, PDF_CROP_MAX_WIDTH_MM * mm, PDF_CROP_MAX_HEIGHT_MM * mm
+            )
             story.append(crop_elem)
-            story.append(Spacer(1, 5 * mm))
-            if i % obj_per_page == 0 and i != len(objs):
+            story.append(Spacer(1, PDF_SPACER_MM * mm))
+            if i % PDF_CROPS_PER_PAGE == 0 and i != len(objs):
                 story.append(PageBreak())
 
         if idx < len(data.images) - 1:
