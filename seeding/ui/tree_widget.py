@@ -4,7 +4,12 @@ LayerTreeWidget отображает иерархию: страницы PDF/из
 """
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QAbstractItemView, QTreeWidget, QTreeWidgetItem
+from PyQt5.QtWidgets import (
+    QAbstractItemView,
+    QHeaderView,
+    QTreeWidget,
+    QTreeWidgetItem,
+)
 
 
 class LayerTreeWidget(QTreeWidget):
@@ -14,8 +19,10 @@ class LayerTreeWidget(QTreeWidget):
         """Конструктор дерева слоёв."""
         super().__init__()
         self.setHeaderLabels(["Название", "Описание"])
-        # Отключаем редактирование элементов, чтобы клики по ним
-        # вызывали открытие изображений, а не режим редактирования
+        header = self.header()
+        header.setMinimumSectionSize(80)
+        header.setSectionResizeMode(0, QHeaderView.Stretch)
+        header.setSectionResizeMode(1, QHeaderView.ResizeToContents)
         self.setEditTriggers(QAbstractItemView.NoEditTriggers)
 
     def add_root_item(self, name, description, index, image_type, image):

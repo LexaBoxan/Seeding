@@ -10,7 +10,7 @@ import os
 import cv2
 import fitz
 import numpy as np
-from PyQt5.QtCore import QPoint, Qt, QThread, pyqtSignal, QRectF, QSettings
+from PyQt5.QtCore import QPoint, QRectF, QSettings, QSize, Qt, QThread, pyqtSignal
 from PyQt5.QtGui import QColor, QImage, QKeySequence, QPainter, QPixmap, QTransform
 
 from PyQt5.QtWidgets import (
@@ -20,7 +20,6 @@ from PyQt5.QtWidgets import (
     QGraphicsPixmapItem,
     QGraphicsScene,
     QGraphicsView,
-    QHeaderView,
     QLabel,
     QMainWindow,
     QMessageBox,
@@ -44,6 +43,8 @@ from ultralytics import YOLO
 import seeding.config as cfg
 from seeding.config import (
     DETECTION_CLASS_NAME,
+    MAIN_CONTENT_MARGINS,
+    TOOLBAR_ICON_SIZE,
     DEFAULT_CLASSIFY_WEIGHTS_PATH,
     NMS_IOU_THRESHOLD,
     PANEL_INFO_MIN_WIDTH,
@@ -120,12 +121,37 @@ class DraggableScrollArea(QScrollArea):
             super().mouseReleaseEvent(event)
 
 
+class ModelLoadWorker(QThread):
+    """Загружает модель YOLO в фоновом потоке."""
+
+    model_loaded = pyqtSignal(object)
+    model_error = pyqtSignal(str)
+
+    def __init__(self, weights_path: str):
+        super().__init__()
+        self.weights_path = weights_path
+
+    def run(self) -> None:  # pragma: no cover - поток
+        try:
+            model = YOLO(self.weights_path)
+            self.model_loaded.emit(model)
+        except Exception as e:
+            logger.exception("Ошибка загрузки модели")
+            self.model_error.emit(str(e))
+
+
 class DetectionWorker(QThread):
-    """Worker для выполнения детекции в отдельном потоке."""
+    """Worker для выполнения детекции одного изображения в отдельном потоке."""
 
     result_ready = pyqtSignal(int, object)
 
-    def __init__(self, index: int, image: np.ndarray, model: YOLO | None = None, weights_path: str | None = None):
+    def __init__(
+        self,
+        index: int,
+        image: np.ndarray,
+        model: YOLO | None = None,
+        weights_path: str | None = None,
+    ):
         super().__init__()
         self.index = index
         self.image = image
@@ -140,6 +166,33 @@ class DetectionWorker(QThread):
             return
         results = model(self.image)
         self.result_ready.emit(self.index, results)
+
+
+class FindAllWorker(QThread):
+    """Worker для поиска сеянцев на всех изображениях в фоновом потоке."""
+
+    result_ready = pyqtSignal(int, object)
+    progress_updated = pyqtSignal(int, int)
+
+    def __init__(self, images: list, model: YOLO):
+        super().__init__()
+        self.images = images
+        self.model = model
+        self._cancel = False
+
+    def cancel(self) -> None:
+        """Запросить отмену обработки."""
+        self._cancel = True
+
+    def run(self) -> None:  # pragma: no cover - поток
+        total = len(self.images)
+        for idx, image in enumerate(self.images):
+            if self._cancel:
+                return
+            self.progress_updated.emit(idx, total)
+            results = self.model(image)
+            self.result_ready.emit(idx, results)
+        self.progress_updated.emit(total, total)
 
 
 class ImageEditor(QMainWindow):
@@ -171,30 +224,19 @@ class ImageEditor(QMainWindow):
         self.weights_path = weights_path
         self.model = None
         self.classify_model = None
-
-        try:
-            self.model = YOLO(weights_path)
-        except Exception as e:
-            logger.exception("Не удалось загрузить модель детекции")
-            QMessageBox.critical(
-                self,
-                "Ошибка загрузки модели",
-                f"Не удалось загрузить модель:\n{weights_path}\n\n{e}",
-            )
+        self._find_all_worker = None
 
         self._active_image_index = 0
 
         self.init_ui()
-
-        if self.model is None:
-            self.action_find.setEnabled(False)
-            self.action_find_all.setEnabled(False)
 
         self.progress_bar = QProgressBar()
         self.progress_bar.setRange(0, 1)
         self.progress_bar.setValue(0)
         self.progress_bar.setVisible(False)
         self.statusBar().addPermanentWidget(self.progress_bar)
+
+        self._start_model_loading()
 
     def init_ui(self):
         self.create_menu()
@@ -209,9 +251,50 @@ class ImageEditor(QMainWindow):
         self.splitter.addWidget(self.scroll_area)
         self.splitter.addWidget(self.right_panel)
         self.splitter.setSizes(SPLITTER_SIZES)
-        self.setCentralWidget(self.splitter)
+
+        central_wrapper = QWidget()
+        wrapper_layout = QVBoxLayout(central_wrapper)
+        wrapper_layout.setContentsMargins(*MAIN_CONTENT_MARGINS)
+        wrapper_layout.setSpacing(0)
+        wrapper_layout.addWidget(self.splitter)
+        self.setCentralWidget(central_wrapper)
 
         self._setup_shortcuts()
+
+        self.action_find.setEnabled(False)
+        self.action_find_all.setEnabled(False)
+
+    def _start_model_loading(self) -> None:
+        """Запускает загрузку модели детекции в фоновом потоке."""
+        self.statusBar().showMessage("Загрузка модели детекции...")
+        self._model_load_worker = ModelLoadWorker(self.weights_path)
+        self._model_load_worker.model_loaded.connect(self._on_model_loaded)
+        self._model_load_worker.model_error.connect(self._on_model_error)
+        self._model_load_worker.finished.connect(self._on_model_load_finished)
+        self._model_load_worker.start()
+
+    def _on_model_loaded(self, model) -> None:
+        """Обработка успешной загрузки модели."""
+        self.model = model
+        self.action_find.setEnabled(True)
+        self.action_find_all.setEnabled(True)
+        self.statusBar().showMessage("Модель загружена", 3000)
+        logger.info("Модель детекции успешно загружена")
+
+    def _on_model_error(self, error_msg: str) -> None:
+        """Обработка ошибки загрузки модели."""
+        QMessageBox.critical(
+            self,
+            "Ошибка загрузки модели",
+            f"Не удалось загрузить модель:\n{self.weights_path}\n\n{error_msg}",
+        )
+        self.statusBar().showMessage("Ошибка загрузки модели", 5000)
+
+    def _on_model_load_finished(self) -> None:
+        """Скрывает индикатор загрузки после завершения worker."""
+        if self.model is None:
+            self.statusBar().showMessage("Модель не загружена")
+        self._model_load_worker = None
 
     def create_menu(self):
         menu_bar = self.menuBar()
@@ -222,37 +305,38 @@ class ImageEditor(QMainWindow):
 
     # ====================== НОВАЯ ВЕРХНЯЯ ПАНЕЛЬ ======================
     def create_top_toolbar(self):
-        """Создание панели инструментов с явным объявлением кнопок."""
+        """Создание панели инструментов."""
         self.toolbar = QToolBar("Инструменты", self)
         self.toolbar.setObjectName("mainToolbar")
-        self.toolbar.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
+        self.toolbar.setIconSize(QSize(TOOLBAR_ICON_SIZE, TOOLBAR_ICON_SIZE))
+        self.toolbar.setToolButtonStyle(Qt.ToolButtonIconOnly)
         self.toolbar.setMovable(False)
         self.addToolBar(Qt.TopToolBarArea, self.toolbar)
 
         style = self.style()
 
-        # --- СЕКЦИЯ: АНАЛИЗ ---
-        self.action_mask = QAction(style.standardIcon(QStyle.SP_FileDialogNewFolder), "Создать маску", self)
-        self.action_mask.setToolTip("Создание маски (в разработке)")
+        # --- АНАЛИЗ ---
+        self.action_mask = QAction(style.standardIcon(QStyle.SP_FileDialogNewFolder), "", self)
+        self.action_mask.setToolTip("Создать маску (в разработке)")
         self.action_mask.triggered.connect(self.create_mask)
         self.toolbar.addAction(self.action_mask)
 
-        self.action_find = QAction(style.standardIcon(QStyle.SP_MediaPlay), "Найти сеянцы", self)
+        self.action_find = QAction(style.standardIcon(QStyle.SP_MediaPlay), "", self)
         self.action_find.setToolTip("Поиск сеянцев на текущем изображении (Ctrl+F)")
         self.action_find.triggered.connect(self.find_seedlings)
         self.toolbar.addAction(self.action_find)
 
-        self.action_find_all = QAction(style.standardIcon(QStyle.SP_DialogYesButton), "Найти все", self)
+        self.action_find_all = QAction(style.standardIcon(QStyle.SP_BrowserReload), "", self)
         self.action_find_all.setToolTip("Поиск сеянцев на всех изображениях (Ctrl+Shift+F)")
         self.action_find_all.triggered.connect(self.find_all_seedlings)
         self.toolbar.addAction(self.action_find_all)
 
-        self.action_classify = QAction(style.standardIcon(QStyle.SP_FileDialogDetailedView), "Классификация", self)
+        self.action_classify = QAction(style.standardIcon(QStyle.SP_FileDialogDetailedView), "", self)
         self.action_classify.setToolTip("Классификация частей растения (Ctrl+C)")
         self.action_classify.triggered.connect(self.classify)
         self.toolbar.addAction(self.action_classify)
 
-        self.action_rotate = QAction(style.standardIcon(QStyle.SP_BrowserReload), "Повернуть 90°", self)
+        self.action_rotate = QAction(style.standardIcon(QStyle.SP_BrowserReload), "", self)
         self.action_rotate.setToolTip("Повернуть изображение (Ctrl+R)")
         self.action_rotate.triggered.connect(self.rotate_image)
         self.toolbar.addAction(self.action_rotate)
@@ -260,7 +344,7 @@ class ImageEditor(QMainWindow):
         self.toolbar.addSeparator()
 
         # --- СЕКЦИЯ: ОТЧЕТЫ ---
-        self.action_report = QAction(style.standardIcon(QStyle.SP_FileDialogContentsView), "Отчёт PDF", self)
+        self.action_report = QAction(style.standardIcon(QStyle.SP_FileDialogContentsView), "", self)
         self.action_report.setToolTip("Создать PDF-отчёт (Ctrl+P)")
         self.action_report.triggered.connect(self.create_report)
         self.toolbar.addAction(self.action_report)
@@ -268,27 +352,30 @@ class ImageEditor(QMainWindow):
         self.toolbar.addSeparator()
 
         # --- СЕКЦИЯ: НАВИГАЦИЯ ---
-        self.action_zoom_in = QAction(style.standardIcon(QStyle.SP_ArrowUp), "Приблизить", self)
+        self.action_zoom_in = QAction(style.standardIcon(QStyle.SP_ArrowUp), "", self)
+        self.action_zoom_in.setToolTip("Приблизить (Ctrl++)")
         self.action_zoom_in.triggered.connect(self.zoom_in)
         self.toolbar.addAction(self.action_zoom_in)
 
-        self.action_zoom_out = QAction(style.standardIcon(QStyle.SP_ArrowDown), "Отдалить", self)
+        self.action_zoom_out = QAction(style.standardIcon(QStyle.SP_ArrowDown), "", self)
+        self.action_zoom_out.setToolTip("Отдалить (Ctrl+-)")
         self.action_zoom_out.triggered.connect(self.zoom_out)
         self.toolbar.addAction(self.action_zoom_out)
 
-        self.action_fit = QAction(style.standardIcon(QStyle.SP_DesktopIcon), "Вписать", self)
+        self.action_fit = QAction(style.standardIcon(QStyle.SP_DesktopIcon), "", self)
+        self.action_fit.setToolTip("Вписать в окно (Ctrl+0)")
         self.action_fit.triggered.connect(self.fit_to_window)
         self.toolbar.addAction(self.action_fit)
 
         self.toolbar.addSeparator()
 
         # --- СЕКЦИЯ: ФАЙЛЫ ---
-        self.action_open = QAction(style.standardIcon(QStyle.SP_DialogOpenButton), "Открыть файлы", self)
+        self.action_open = QAction(style.standardIcon(QStyle.SP_DialogOpenButton), "", self)
         self.action_open.setToolTip("Открыть изображения или PDF (Ctrl+O)")
         self.action_open.triggered.connect(self.open_image)
         self.toolbar.addAction(self.action_open)
 
-        self.action_add = QAction(style.standardIcon(QStyle.SP_FileIcon), "Добавить файлы", self)
+        self.action_add = QAction(style.standardIcon(QStyle.SP_FileIcon), "", self)
         self.action_add.setToolTip("Добавить файлы к проекту (Ctrl+Shift+O)")
         self.action_add.triggered.connect(self.add_files)
         self.toolbar.addAction(self.action_add)
@@ -296,12 +383,12 @@ class ImageEditor(QMainWindow):
         self.toolbar.addSeparator()
 
         # --- СЕКЦИЯ: СИСТЕМА ---
-        self.action_save = QAction(style.standardIcon(QStyle.SP_DialogSaveButton), "Сохранить", self)
+        self.action_save = QAction(style.standardIcon(QStyle.SP_DialogSaveButton), "", self)
         self.action_save.setToolTip("Сохранить изменения (Ctrl+S)")
         self.action_save.triggered.connect(self.save_changes)
         self.toolbar.addAction(self.action_save)
 
-        self.action_settings = QAction(style.standardIcon(QStyle.SP_ComputerIcon), "Настройки", self)
+        self.action_settings = QAction(style.standardIcon(QStyle.SP_ComputerIcon), "", self)
         self.action_settings.setToolTip("Параметры порогов уверенности")
         self.action_settings.triggered.connect(self.open_settings)
         self.toolbar.addAction(self.action_settings)
@@ -957,28 +1044,24 @@ class ImageEditor(QMainWindow):
         self.worker.start()
 
     def find_all_seedlings(self) -> None:
-        """Запускает поиск сеянцев на всех изображениях без падений.
+        """Запускает поиск сеянцев на всех изображениях в фоновом потоке.
 
-        Ранее метод вызывал :meth:`find_seedlings`, который стартовал
-        асинхронный `QThread` для каждой страницы. При последовательном
-        обходе изображений это приводило к одновременному запуску множества
-        потоков и приложению было сложно корректно обновлять прогресс‑бар,
-        что могло завершаться крашем. Теперь детекция выполняется
-        синхронно в основном потоке: результаты каждой страницы
-        обрабатываются сразу после получения, а индикатор прогресса
-        обновляется последовательно.
+        Детекция выполняется в FindAllWorker; UI остаётся отзывчивым,
+        прогресс отображается в статус-баре.
         """
-
-
         if self.model is None:
             QMessageBox.warning(
                 self,
                 "Модель не загружена",
-                "Модель детекции не загружена. Проверьте путь к весам.",
+                "Модель детекции не загружена. Дождитесь окончания загрузки.",
             )
             return
         if not self.image_storage.images:
             logger.warning("find_all_seedlings: Нет изображений")
+            return
+
+        if self._find_all_worker is not None and self._find_all_worker.isRunning():
+            logger.warning("find_all_seedlings: уже выполняется")
             return
 
         if self.image_storage.class_object_image is None:
@@ -990,21 +1073,32 @@ class ImageEditor(QMainWindow):
         self.progress_bar.setVisible(True)
         self.progress_bar.setRange(0, total)
         self.progress_bar.setValue(0)
+        self.action_find.setEnabled(False)
+        self.action_find_all.setEnabled(False)
 
-        for idx, image in enumerate(self.image_storage.images):
-            self._active_image_index = idx
-            self.progress_bar.setValue(idx)
+        self._find_all_worker = FindAllWorker(
+            self.image_storage.images, self.model
+        )
+        self._find_all_worker.result_ready.connect(self._on_detection_result)
+        self._find_all_worker.progress_updated.connect(self._on_find_all_progress)
+        self._find_all_worker.finished.connect(self._on_find_all_finished)
+        self._find_all_worker.start()
 
-            results = self.model(image)
-            self._on_detection_result(idx, results)
+    def _on_find_all_progress(self, current: int, total: int) -> None:
+        """Обновляет прогресс-бар при «Найти все»."""
+        self.progress_bar.setValue(current)
+        self._active_image_index = min(current, total - 1) if total > 0 else 0
+        if current < total:
+            self.update_left_info({"type": "pdf", "index": self._active_image_index})
 
-            self.progress_bar.setValue(idx + 1)
-            if hasattr(self, "_active_image_index"):
-                self.update_left_info({"type": "pdf", "index": self._active_image_index})
-
+    def _on_find_all_finished(self) -> None:
+        """Завершение «Найти все»: скрыть прогресс, включить кнопки."""
         self.progress_bar.setVisible(False)
         self.progress_bar.setRange(0, 1)
         self.progress_bar.setValue(0)
+        self.action_find.setEnabled(True)
+        self.action_find_all.setEnabled(True)
+        self._find_all_worker = None
         logger.info("find_all_seedlings: завершено")
 
     def display_image_with_boxes(self, img_idx: int, seeding_idx: int = None):

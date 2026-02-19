@@ -79,15 +79,18 @@ WINDOW_WIDTH = 1400
 WINDOW_HEIGHT = 900
 
 # Разделитель: [левая панель, центр, правая панель]
-SPLITTER_SIZES = [220, 800, 280]
+SPLITTER_SIZES = [240, 760, 300]
+
+# Отступы основного контента от краёв окна (left, top, right, bottom)
+MAIN_CONTENT_MARGINS = (12, 8, 12, 8)
 
 # Левая панель информации
-PANEL_INFO_MIN_WIDTH = 220
-PANEL_LAYOUT_MARGINS = (8, 12, 8, 8)
+PANEL_INFO_MIN_WIDTH = 240
+PANEL_LAYOUT_MARGINS = (12, 16, 12, 12)
 
-# Правая панель слоёв
-PANEL_LAYERS_MIN_WIDTH = 260
-PANEL_LAYERS_MAX_WIDTH = 320
+# Правая панель слоёв (шире, чтобы заголовки не обрезались)
+PANEL_LAYERS_MIN_WIDTH = 280
+PANEL_LAYERS_MAX_WIDTH = 360
 
 # Диалог настроек
 DIALOG_SETTINGS_MIN_WIDTH = 360
@@ -99,6 +102,9 @@ DIALOG_SPINBOX_STEP = 0.05
 # Зум
 ZOOM_FACTOR_INITIAL = 1.0
 ZOOM_FACTOR_INCREMENT = 1.25
+
+# Тулбар (компактный стиль как в VS Code, Figma)
+TOOLBAR_ICON_SIZE = 18
 
 
 # -----------------------------------------------------------------------------
@@ -159,7 +165,7 @@ BBOX_COLOR_ORANGE_RGB = (255, 165, 0)  # оранжевый для средне�
 
 APP_FONT_FAMILY = "Segoe UI"
 APP_FONT_SIZE = 10
-QT_MATERIAL_THEME = "dark_blue.xml"
+QT_MATERIAL_THEME = "dark_teal.xml"  # более нейтральный, чем dark_blue
 
 
 # -----------------------------------------------------------------------------

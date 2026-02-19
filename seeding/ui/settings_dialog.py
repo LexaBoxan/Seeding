@@ -41,6 +41,7 @@ class SettingsDialog(QDialog):
 
     def init_ui(self):
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(DIALOG_LAYOUT_SPACING)
 
         # Блок порогов уверенности
@@ -50,7 +51,7 @@ class SettingsDialog(QDialog):
                 background-color: #23262b;
                 border: 1px solid #3b4048;
                 border-radius: 8px;
-                padding: 12px;
+                padding: 16px;
             }
         """)
         frame_layout = QVBoxLayout(frame)
@@ -80,8 +81,10 @@ class SettingsDialog(QDialog):
         self.spin_low.setMinimumWidth(DIALOG_SPINBOX_MIN_WIDTH)
         l_layout.addWidget(self.spin_low)
         frame_layout.addLayout(l_layout)
+        frame_layout.setSpacing(12)
 
         layout.addWidget(frame)
+        layout.addSpacing(8)
 
         # Кнопки
         self.buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
