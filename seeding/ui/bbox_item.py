@@ -6,11 +6,15 @@
 
 from PyQt5.QtCore import QRectF, Qt
 from PyQt5.QtGui import QPen, QColor
-from PyQt5.QtWidgets import QGraphicsItem, QGraphicsRectItem, QStyleOptionGraphicsItem, QWidget
+from PyQt5.QtWidgets import (
+    QGraphicsItem,
+    QGraphicsRectItem,
+    QStyleOptionGraphicsItem,
+    QWidget,
+)
 
 import seeding.config as cfg
 
-# Толщина пера рамки
 BBOX_PEN_WIDTH = 2
 
 
@@ -39,10 +43,9 @@ class BBoxItem(QGraphicsRectItem):
         offset=(0, 0),
     ):
         super().__init__(rect, parent)
-        self.obj = obj  # Может быть ObjectImage или AllClassImage
+        self.obj = obj
         self.offset = offset
 
-        # Цвет рамки по уверенности
         color = get_color_by_confidence(getattr(obj, "confidence", 0.0))
         self.setPen(QPen(color, BBOX_PEN_WIDTH))
 
@@ -68,14 +71,19 @@ class BBoxItem(QGraphicsRectItem):
         }
 
     def setEditable(self, state: bool) -> None:
+        """Включает или выключает режим редактирования рамки."""
         self._editable = state
         self.setFlag(QGraphicsItem.ItemIsMovable, state)
         self.update()
 
-    def paint(self, painter, option: QStyleOptionGraphicsItem, widget: QWidget | None = None):
-        # Рисуем основную рамку
+    def paint(
+        self,
+        painter,
+        option: QStyleOptionGraphicsItem,
+        widget: QWidget | None = None,
+    ):
+        """Отрисовывает рамку и маркеры редактирования в активном режиме."""
         super().paint(painter, option, widget)
-        # Если включен режим редактирования, рисуем белые квадратики по углам
         if self._editable:
             painter.setBrush(Qt.white)
             painter.setPen(QPen(Qt.black, 1))
@@ -121,7 +129,6 @@ class BBoxItem(QGraphicsRectItem):
         """Обновляет координаты bbox в связанном объекте данных."""
         r = self.rect().normalized()
         ox, oy = self.offset
-        # Записываем новые координаты обратно в объект (сеянец или часть)
         self.obj.bbox = (
             int(r.left() + ox),
             int(r.top() + oy),

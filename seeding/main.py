@@ -1,46 +1,51 @@
-"""Точка входа приложения Seeding.
+"""Точка входа в графическое приложение Seeding."""
 
-Запускает PyQt5 GUI для анализа изображений сеянцев с детекцией YOLOv8.
-"""
+from __future__ import annotations
 
 import argparse
 import logging
 import os
 import sys
+from pathlib import Path
 
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import QApplication, QMessageBox
-import qt_material
 
 from seeding.config import (
-    DEFAULT_WEIGHTS_PATH,
     APP_FONT_FAMILY,
     APP_FONT_SIZE,
-    QT_MATERIAL_THEME,
+    DEFAULT_WEIGHTS_PATH,
+    PROJECT_ROOT,
 )
+from seeding.path_utils import resolve_weights_path
+from seeding.ui.preferences import load_ui_preferences
 from seeding.ui.main_window import ImageEditor
-from seeding.ui.styles import MAIN_STYLESHEET
+from seeding.ui.theme_manager import apply_theme
 
 
-def _validate_weights_path(path: str) -> bool:
-    """Проверяет, что путь к весам корректен. Для локальных файлов — существование."""
-    if not path:
-        return False
-    # Если путь выглядит как локальный файл — проверяем существование
-    if os.sep in path or (len(path) > 1 and path[1] == ":"):
-        return os.path.isfile(path)
-    # Имя модели (yolov8n.pt и т.д.) — считаем валидным
-    return True
+def _resolve_weights_path(path_value: str) -> str | None:
+    """Разрешает и проверяет путь/алиас весов модели."""
+    resolved = resolve_weights_path(
+        path_value,
+        base_dirs=(PROJECT_ROOT, Path.cwd()),
+    )
+    if resolved is None:
+        return None
+    return str(resolved)
+
+
+def _validate_weights_path(path_value: str) -> bool:
+    """Возвращает ``True``, если путь к весам корректен."""
+    return _resolve_weights_path(path_value) is not None
 
 
 def main() -> None:
-    """Запускает графическое приложение."""
-
-    parser = argparse.ArgumentParser(description="ImageEditor")
+    """Запускает Qt-приложение."""
+    parser = argparse.ArgumentParser(description="Seeding")
     parser.add_argument(
         "--weights",
         default=os.getenv("YOLO_WEIGHTS_PATH", str(DEFAULT_WEIGHTS_PATH)),
-        help="Путь к весам YOLOv8",
+        help="Путь к весам YOLO (.pt) или алиас модели",
     )
     args = parser.parse_args()
 
@@ -51,18 +56,23 @@ def main() -> None:
 
     app = QApplication(sys.argv)
     app.setFont(QFont(APP_FONT_FAMILY, APP_FONT_SIZE))
-    qt_material.apply_stylesheet(app, theme=QT_MATERIAL_THEME)
-    app.setStyleSheet(app.styleSheet() + MAIN_STYLESHEET)
+    ui_preferences = load_ui_preferences()
+    apply_theme(app, ui_preferences.theme)
 
-    if not _validate_weights_path(args.weights):
+    resolved_weights = _resolve_weights_path(args.weights)
+    if resolved_weights is None:
         QMessageBox.critical(
             None,
-            "Ошибка",
-            f"Файл весов не найден:\n{args.weights}\n\nУкажите путь через --weights или YOLO_WEIGHTS_PATH.",
+            "Ошибка пути к весам",
+            (
+                f"Не удалось найти веса модели:\n{args.weights}\n\n"
+                "Укажите корректный путь через --weights или "
+                "YOLO_WEIGHTS_PATH, либо существующий файл <name>.pt."
+            ),
         )
         sys.exit(1)
 
-    window = ImageEditor(weights_path=args.weights)
+    window = ImageEditor(weights_path=resolved_weights)
     window.show()
     sys.exit(app.exec_())
 

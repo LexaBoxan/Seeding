@@ -15,6 +15,9 @@ build/
 # Jupyter / IPython
 .ipynb_checkpoints/
 *.ipynb_checkpoints
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
 
 # Virtual env
 .venv/
@@ -29,6 +32,14 @@ ENV/
 *.out
 *.err
 *.pid
+*.tmp
+*.temp
+
+# Coverage
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
 
 # =========================
 # IDE / Editors
@@ -52,6 +63,8 @@ output/
 outputs/
 logs/
 qt-material/
+reports/
+Photo/report_*.pdf
 
 # Big model files
 *.pt

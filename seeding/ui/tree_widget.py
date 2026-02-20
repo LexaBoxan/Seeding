@@ -1,7 +1,6 @@
-"""Дерево слоёв для отображения оригиналов и найденных объектов.
+"""Виджет дерева слоёв: страницы/изображения → сеянцы → части."""
 
-LayerTreeWidget отображает иерархию: страницы PDF/изображения → сеянцы → части.
-"""
+from __future__ import annotations
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
@@ -13,10 +12,10 @@ from PyQt5.QtWidgets import (
 
 
 class LayerTreeWidget(QTreeWidget):
-    """Простой QTreeWidget для отображения иерархии изображений."""
+    """QTreeWidget для отображения структуры результатов анализа."""
 
     def __init__(self) -> None:
-        """Конструктор дерева слоёв."""
+        """Инициализирует таблицу слоёв и базовые параметры колонок."""
         super().__init__()
         self.setHeaderLabels(["Название", "Описание"])
         header = self.header()
@@ -25,36 +24,44 @@ class LayerTreeWidget(QTreeWidget):
         header.setSectionResizeMode(1, QHeaderView.ResizeToContents)
         self.setEditTriggers(QAbstractItemView.NoEditTriggers)
 
-    def add_root_item(self, name, description, index, image_type, image):
-        """
-        Добавляет корневой элемент (страницу, оригинал и т.д.) в дерево.
-        """
+    def add_root_item(
+        self,
+        name: str,
+        description: str,
+        index: int,
+        image_type: str,
+        image,
+    ) -> QTreeWidgetItem:
+        """Добавляет корневой элемент дерева (страницу/изображение)."""
+        _ = image  # Сохраняем сигнатуру метода для совместимости вызовов.
         root = QTreeWidgetItem(self)
         root.setText(0, name)
         root.setText(1, description)
-        # Сохраняем изображение и индекс внутри UserRole
         root.setData(0, Qt.UserRole, {"index": index, "type": image_type})
-        # Убираем возможность редактирования названия элемента
         root.setFlags(root.flags() & ~Qt.ItemIsEditable)
         self.addTopLevelItem(root)
         return root
 
     def add_child_item(
-        self, parent, name, description, parent_index, index, image_type, image
-    ):
-        """
-        Добавляет дочерний элемент к выбранному родителю.
-        """
+        self,
+        parent: QTreeWidgetItem,
+        name: str,
+        description: str,
+        parent_index: int,
+        index: int,
+        image_type: str,
+        image,
+    ) -> QTreeWidgetItem:
+        """Добавляет дочерний элемент сеянца к корневому узлу."""
+        _ = (image_type, image)  # Параметры оставлены для совместимости API.
         child = QTreeWidgetItem(parent)
         child.setText(0, name)
         child.setText(1, description)
-        # Тут parent_index — это индекс оригинального изображения, index — это индекс сеянца (crop-а)
         child.setData(
             0,
             Qt.UserRole,
             {"type": "seeding", "parent_index": parent_index, "index": index},
         )
-        # Убираем возможность редактирования названия элемента
         child.setFlags(child.flags() & ~Qt.ItemIsEditable)
         parent.addChild(child)
         return child
@@ -68,13 +75,7 @@ class LayerTreeWidget(QTreeWidget):
         seeding_index: int,
         class_index: int,
     ) -> QTreeWidgetItem:
-        """Добавляет подпункт классификации под выбранным сеянцем.
-
-        В элементе сохраняются индексы родительского изображения,
-        сеянца и класса, что позволяет при клике отображать
-        соответствующий вырез изображения.
-        """
-
+        """Добавляет узел классификации под выбранным сеянцем."""
         child = QTreeWidgetItem(parent)
         child.setText(0, name)
         child.setText(1, description)
@@ -88,7 +89,6 @@ class LayerTreeWidget(QTreeWidget):
                 "class_index": class_index,
             },
         )
-        # Убираем возможность редактирования названия элемента
         child.setFlags(child.flags() & ~Qt.ItemIsEditable)
         parent.addChild(child)
         return child

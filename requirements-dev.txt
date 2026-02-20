@@ -1,0 +1,4 @@
+-r seeding/requirements.txt
+pytest>=8.0
+pytest-cov>=5.0
+flake8>=7.0
