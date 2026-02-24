@@ -5,8 +5,12 @@
 
 from __future__ import annotations
 
+import csv
+import json
+from pathlib import Path
 from typing import Iterable
 
+import cv2
 import numpy as np
 
 from seeding.models import AllClassImage, ObjectImage, OriginalImage
@@ -27,6 +31,11 @@ class ImageService:
         image_storage: OriginalImage,
         page_index: int,
     ) -> list[ObjectImage]:
+        """Возвращает список объектов выбранной страницы.
+
+        Если контейнер детекций ещё не инициализирован или индекс страницы
+        выходит за границы, возвращается пустой список.
+        """
         if (
             not image_storage.class_object_image
             or page_index >= len(image_storage.class_object_image)
@@ -389,9 +398,290 @@ class ReportService:
         return output_path
 
 
+class ExportService:
+    """Экспорт результатов анализа в разные форматы."""
+
+    @staticmethod
+    def _iter_global_annotations(
+        image_storage: OriginalImage,
+    ) -> list[dict]:
+        """Плоский список аннотаций с глобальными bbox по страницам."""
+        annotations: list[dict] = []
+        if not image_storage.class_object_image:
+            return annotations
+
+        for page_index, objects in enumerate(image_storage.class_object_image):
+            if page_index >= len(image_storage.images):
+                continue
+            page_image = image_storage.images[page_index]
+            height, width = page_image.shape[:2]
+            for obj_idx, obj in enumerate(objects):
+                if obj.bbox:
+                    clipped = clip_bbox_to_image(obj.bbox, width, height)
+                    if clipped is not None:
+                        annotations.append(
+                            {
+                                "page_index": page_index,
+                                "object_index": obj_idx,
+                                "class_name": "seeding",
+                                "confidence": float(obj.confidence),
+                                "bbox": clipped,
+                            }
+                        )
+
+                if not obj.image_all_class or not obj.bbox:
+                    continue
+
+                rotation_k = int(getattr(obj, "rotation_k", 0)) % 4
+                if obj.image:
+                    crop_height, crop_width = obj.image[0].shape[:2]
+                else:
+                    crop_height, crop_width = 0, 0
+
+                for part in obj.image_all_class:
+                    if not part.bbox:
+                        continue
+                    lx1, ly1, lx2, ly2 = part.bbox
+                    if rotation_k and crop_height and crop_width:
+                        ux1, uy1, ux2, uy2 = rotate_bbox(
+                            lx1,
+                            ly1,
+                            lx2,
+                            ly2,
+                            crop_width,
+                            crop_height,
+                            (-rotation_k) % 4,
+                        )
+                    else:
+                        ux1, uy1, ux2, uy2 = lx1, ly1, lx2, ly2
+
+                    gx1 = obj.bbox[0] + ux1
+                    gy1 = obj.bbox[1] + uy1
+                    gx2 = obj.bbox[0] + ux2
+                    gy2 = obj.bbox[1] + uy2
+                    clipped = clip_bbox_to_image(
+                        (gx1, gy1, gx2, gy2),
+                        width,
+                        height,
+                    )
+                    if clipped is None:
+                        continue
+                    annotations.append(
+                        {
+                            "page_index": page_index,
+                            "object_index": obj_idx,
+                            "class_name": str(part.class_name),
+                            "confidence": float(part.confidence),
+                            "bbox": clipped,
+                        }
+                    )
+        return annotations
+
+    @staticmethod
+    def export_json(
+        image_storage: OriginalImage,
+        output_dir: str | Path,
+    ) -> Path:
+        """Экспортирует результаты в JSON."""
+        out_dir = Path(output_dir)
+        out_dir.mkdir(parents=True, exist_ok=True)
+        annotations = ExportService._iter_global_annotations(image_storage)
+        payload = {
+            "source_file": image_storage.file_path,
+            "pages_count": len(image_storage.images),
+            "annotations": annotations,
+        }
+        path = out_dir / "results.json"
+        path.write_text(
+            json.dumps(payload, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        return path
+
+    @staticmethod
+    def export_csv(
+        image_storage: OriginalImage,
+        output_dir: str | Path,
+    ) -> Path:
+        """Экспортирует результаты в CSV."""
+        out_dir = Path(output_dir)
+        out_dir.mkdir(parents=True, exist_ok=True)
+        annotations = ExportService._iter_global_annotations(image_storage)
+        path = out_dir / "results.csv"
+        with path.open("w", newline="", encoding="utf-8") as fh:
+            writer = csv.writer(fh, delimiter=";")
+            writer.writerow(
+                [
+                    "page_index",
+                    "object_index",
+                    "class_name",
+                    "confidence",
+                    "x1",
+                    "y1",
+                    "x2",
+                    "y2",
+                ]
+            )
+            for ann in annotations:
+                x1, y1, x2, y2 = ann["bbox"]
+                writer.writerow(
+                    [
+                        ann["page_index"],
+                        ann["object_index"],
+                        ann["class_name"],
+                        f"{ann['confidence']:.6f}",
+                        x1,
+                        y1,
+                        x2,
+                        y2,
+                    ]
+                )
+        return path
+
+    @staticmethod
+    def export_yolo(
+        image_storage: OriginalImage,
+        output_dir: str | Path,
+    ) -> Path:
+        """Экспортирует результаты в YOLO txt по страницам."""
+        out_dir = Path(output_dir) / "yolo"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        annotations = ExportService._iter_global_annotations(image_storage)
+
+        classes = sorted({ann["class_name"] for ann in annotations})
+        class_to_id = {name: idx for idx, name in enumerate(classes)}
+        classes_path = out_dir / "classes.txt"
+        classes_path.write_text("\n".join(classes), encoding="utf-8")
+
+        by_page: dict[int, list[dict]] = {}
+        for ann in annotations:
+            by_page.setdefault(int(ann["page_index"]), []).append(ann)
+
+        for page_idx, page_annotations in by_page.items():
+            if page_idx >= len(image_storage.images):
+                continue
+            image = image_storage.images[page_idx]
+            height, width = image.shape[:2]
+            lines: list[str] = []
+            for ann in page_annotations:
+                class_id = class_to_id[ann["class_name"]]
+                x1, y1, x2, y2 = ann["bbox"]
+                bw = max(0.0, float(x2 - x1))
+                bh = max(0.0, float(y2 - y1))
+                cx = float(x1) + bw / 2.0
+                cy = float(y1) + bh / 2.0
+                lines.append(
+                    (
+                        f"{class_id} "
+                        f"{cx / width:.6f} {cy / height:.6f} "
+                        f"{bw / width:.6f} {bh / height:.6f}"
+                    )
+                )
+            (out_dir / f"page_{page_idx + 1:04d}.txt").write_text(
+                "\n".join(lines),
+                encoding="utf-8",
+            )
+        return out_dir
+
+    @staticmethod
+    def export_coco(
+        image_storage: OriginalImage,
+        output_dir: str | Path,
+    ) -> Path:
+        """Экспортирует результаты в COCO JSON."""
+        out_dir = Path(output_dir)
+        out_dir.mkdir(parents=True, exist_ok=True)
+        annotations = ExportService._iter_global_annotations(image_storage)
+
+        categories_names = sorted({ann["class_name"] for ann in annotations})
+        categories = [
+            {"id": idx + 1, "name": name}
+            for idx, name in enumerate(categories_names)
+        ]
+        class_to_id = {cat["name"]: cat["id"] for cat in categories}
+
+        images = []
+        coco_annotations = []
+        ann_id = 1
+        for page_idx, image in enumerate(image_storage.images):
+            height, width = image.shape[:2]
+            images.append(
+                {
+                    "id": page_idx + 1,
+                    "file_name": f"page_{page_idx + 1:04d}.jpg",
+                    "width": width,
+                    "height": height,
+                }
+            )
+        for ann in annotations:
+            x1, y1, x2, y2 = ann["bbox"]
+            w = max(0, x2 - x1)
+            h = max(0, y2 - y1)
+            coco_annotations.append(
+                {
+                    "id": ann_id,
+                    "image_id": int(ann["page_index"]) + 1,
+                    "category_id": class_to_id[ann["class_name"]],
+                    "bbox": [x1, y1, w, h],
+                    "area": w * h,
+                    "iscrowd": 0,
+                    "score": float(ann["confidence"]),
+                }
+            )
+            ann_id += 1
+
+        payload = {
+            "images": images,
+            "annotations": coco_annotations,
+            "categories": categories,
+        }
+        path = out_dir / "results_coco.json"
+        path.write_text(
+            json.dumps(payload, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        return path
+
+    @staticmethod
+    def export_annotated_images(
+        image_storage: OriginalImage,
+        output_dir: str | Path,
+    ) -> Path:
+        """Сохраняет изображения с отрисованными bbox в отдельную папку."""
+        out_dir = Path(output_dir) / "annotated"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        annotations = ExportService._iter_global_annotations(image_storage)
+        by_page: dict[int, list[dict]] = {}
+        for ann in annotations:
+            by_page.setdefault(int(ann["page_index"]), []).append(ann)
+
+        for page_idx, image in enumerate(image_storage.images):
+            rendered = image.copy()
+            for ann in by_page.get(page_idx, []):
+                x1, y1, x2, y2 = ann["bbox"]
+                class_name = ann["class_name"]
+                color = (0, 255, 0) if class_name == "seeding" else (255, 0, 0)
+                cv2.rectangle(rendered, (x1, y1), (x2, y2), color, 2)
+                cv2.putText(
+                    rendered,
+                    class_name,
+                    (x1, max(0, y1 - 4)),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.5,
+                    color,
+                    1,
+                )
+            cv2.imwrite(
+                str(out_dir / f"page_{page_idx + 1:04d}.jpg"),
+                rendered,
+            )
+        return out_dir
+
+
 __all__ = [
     "ImageService",
     "ReportService",
     "DetectionService",
     "ClassificationService",
+    "ExportService",
 ]

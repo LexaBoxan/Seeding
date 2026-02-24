@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from seeding.path_utils import ensure_dir, resolve_weights_path
+from seeding.utils import ensure_dir, resolve_weights_path
 
 
 def test_resolve_weights_path_supports_unix_and_windows_separators(tmp_path):

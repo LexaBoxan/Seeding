@@ -68,6 +68,23 @@ class RotateSelectionResult:
 
 
 @dataclass
+class MeasurementRecord:
+    """Запись результата измерения объекта в пикселях и миллиметрах."""
+
+    timestamp: str
+    source_file: str
+    page_index: int
+    object_index: int
+    width_px: int
+    height_px: int
+    diagonal_px: float
+    pixels_per_mm: float
+    width_mm: float | None = None
+    height_mm: float | None = None
+    diagonal_mm: float | None = None
+
+
+@dataclass
 class AppState:
     """Состояние приложения, разделяемое между UI и логикой."""
 
@@ -77,11 +94,15 @@ class AppState:
     zoom_factor: float = 1.0
     last_report_path: str = ""
     report_dir: str = ""
+    pixels_per_mm: float = 0.0
+    use_cache: bool = True
+
 
 __all__ = [
     "AllClassImage",
     "AppState",
     "BBox",
+    "MeasurementRecord",
     "ObjectImage",
     "OriginalImage",
     "RotateSelectionResult",

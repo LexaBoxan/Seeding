@@ -1,4 +1,3 @@
-import numpy as np
 from seeding.utils import simple_nms, rotate_bbox
 
 
@@ -15,5 +14,13 @@ def test_rotate_bbox_roundtrip():
     for k in range(4):
         rx1, ry1, rx2, ry2 = rotate_bbox(*box, w, h, k)
         w_rot, h_rot = (h, w) if k % 2 else (w, h)
-        bx1, by1, bx2, by2 = rotate_bbox(rx1, ry1, rx2, ry2, w_rot, h_rot, (-k) % 4)
+        bx1, by1, bx2, by2 = rotate_bbox(
+            rx1,
+            ry1,
+            rx2,
+            ry2,
+            w_rot,
+            h_rot,
+            (-k) % 4,
+        )
         assert (bx1, by1, bx2, by2) == box

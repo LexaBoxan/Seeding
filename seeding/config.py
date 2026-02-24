@@ -41,16 +41,24 @@ DETECTION_CLASS_NAME = "seeding"
 # Порог IoU для non-maximum suppression (0.0–1.0)
 NMS_IOU_THRESHOLD = 0.4
 
+# Минимальная уверенность детектора (перед постобработкой)
+DETECTION_CONFIDENCE_THRESHOLD = 0.25
+
+# Порог IoU, настраиваемый пользователем для NMS
+DETECTION_IOU_THRESHOLD = NMS_IOU_THRESHOLD
+
 
 # -----------------------------------------------------------------------------
 # Пороги уверенности
 # -----------------------------------------------------------------------------
 
 # Порог «отличной» уверенности — зелёный цвет рамки
-CONF_THRESHOLD_HIGH = 0.9
+CONF_THRESHOLD_HIGH_DEFAULT = 0.9
+CONF_THRESHOLD_HIGH = CONF_THRESHOLD_HIGH_DEFAULT
 
 # Порог «хорошей» уверенности — оранжевый цвет рамки
-CONF_THRESHOLD_LOW = 0.5
+CONF_THRESHOLD_LOW_DEFAULT = 0.5
+CONF_THRESHOLD_LOW = CONF_THRESHOLD_LOW_DEFAULT
 
 # Пороги для отображения в информационной панели (классификация частей)
 CONF_DISPLAY_HIGH = 0.85  # зелёный в списке классов
@@ -166,6 +174,20 @@ BBOX_COLOR_ORANGE_RGB = (255, 165, 0)  # оранжевый для средне�
 APP_FONT_FAMILY = "Segoe UI"
 APP_FONT_SIZE = 10
 QT_MATERIAL_THEME = "dark_teal.xml"  # более нейтральный, чем dark_blue
+
+
+# -----------------------------------------------------------------------------
+# Калибровка и локальное хранение
+# -----------------------------------------------------------------------------
+
+# Коэффициент перевода px -> mm. Значение 0 означает, что калибровка не задана.
+CALIBRATION_PIXELS_PER_MM_DEFAULT = 0.0
+
+# Использовать кэш детекции/классификации по умолчанию.
+USE_CACHE_DEFAULT = True
+
+# Каталог для локального кэша и истории измерений.
+LOCAL_STORAGE_DIR = PROJECT_ROOT / "results" / "storage"
 
 
 # -----------------------------------------------------------------------------

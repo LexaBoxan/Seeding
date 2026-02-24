@@ -35,18 +35,28 @@ jobs:
       - name: Run flake8
         run: |
           python -m flake8 \
-            seeding/controllers \
-            seeding/services \
+            seeding/controllers.py \
+            seeding/services.py \
+            seeding/models.py \
+            seeding/storage.py \
             seeding/ui/icon_manager.py \
+            seeding/ui/tree_widget.py \
+            seeding/ui/export_dialog.py \
             seeding/ui/metrics.py \
             seeding/ui/preferences.py \
             seeding/ui/theme_manager.py \
             seeding/ui/layout_state.py \
             seeding/ui/i18n.py \
             tests/test_app_controller.py \
+            tests/test_export_service.py \
             tests/test_image_service.py \
             tests/test_icon_manager.py \
-            tests/test_layout_state.py
+            tests/test_layout_state.py \
+            tests/test_main_window_resilience.py \
+            tests/test_settings_dialog.py \
+            tests/test_storage_service.py \
+            tests/test_tree_widget.py \
+            tests/test_ui_localization_panels.py
 
       - name: Check translation sources
         run: |

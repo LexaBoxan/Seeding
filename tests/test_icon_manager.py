@@ -9,6 +9,7 @@ def test_icon_manager_has_expected_resources():
     assert IconManager.has_icon_resource("tool_select.svg")
     assert IconManager.has_icon_resource("tool_hand.svg")
     assert IconManager.has_icon_resource("tool_zoom.svg")
+    assert IconManager.has_icon_resource("tool_measure.svg")
     assert not IconManager.has_icon_resource("missing_icon.svg")
 
 

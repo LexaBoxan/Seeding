@@ -17,7 +17,7 @@ from seeding.config import (
     DEFAULT_WEIGHTS_PATH,
     PROJECT_ROOT,
 )
-from seeding.path_utils import resolve_weights_path
+from seeding.utils import resolve_weights_path
 from seeding.ui.preferences import load_ui_preferences
 from seeding.ui.main_window import ImageEditor
 from seeding.ui.theme_manager import apply_theme
@@ -73,7 +73,7 @@ def main() -> None:
         sys.exit(1)
 
     window = ImageEditor(weights_path=resolved_weights)
-    window.show()
+    window.showMaximized()
     sys.exit(app.exec_())
 
 

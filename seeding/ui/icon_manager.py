@@ -14,6 +14,10 @@ class IconManager:
     """Загружает иконки из ресурсов и кэширует их."""
 
     def __init__(self, widget: QWidget) -> None:
+        """Инициализирует менеджер иконок для конкретного виджета.
+
+        Виджет используется как источник fallback-иконок из ``QStyle``.
+        """
         self._widget = widget
         self._icons_dir = PROJECT_ROOT / "seeding" / "resources" / "icons"
         self._cache: dict[str, QIcon] = {}

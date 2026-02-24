@@ -33,6 +33,11 @@ class AppController:
         detection_service: DetectionService | None = None,
         classification_service: ClassificationService | None = None,
     ) -> None:
+        """Инициализирует контроллер и подключает сервисы доменной логики.
+
+        Если сервис не передан извне (например, в тестах), создаётся
+        стандартная реализация по умолчанию.
+        """
         self.image_service = image_service or ImageService()
         self.report_service = report_service or ReportService()
         self.detection_service = detection_service or DetectionService()

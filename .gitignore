@@ -65,6 +65,8 @@ logs/
 qt-material/
 reports/
 Photo/report_*.pdf
+Photo/results*.json
+Photo/results*.csv
 
 # Big model files
 *.pt

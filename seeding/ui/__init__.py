@@ -6,6 +6,11 @@ __all__ = ["ImageEditor", "LayerTreeWidget"]
 
 
 def __getattr__(name: str):
+    """Лениво возвращает UI-классы по имени атрибута пакета.
+
+    Такой механизм уменьшает побочные импорты при старте и оставляет
+    совместимый внешний API: ``from seeding.ui import ImageEditor``.
+    """
     if name == "ImageEditor":
         from .main_window import ImageEditor
 
