@@ -36,12 +36,18 @@ from seeding.config import (
     DIALOG_SETTINGS_MIN_WIDTH,
     DIALOG_SPINBOX_MIN_WIDTH,
     DIALOG_SPINBOX_STEP,
+    PDF_RENDER_SCALE_DEFAULT,
     PROJECT_ROOT,
     QSETTINGS_APP,
     QSETTINGS_ORG,
     USE_CACHE_DEFAULT,
 )
-from seeding.utils import resolve_weights_path
+from seeding.model_registry import (
+    format_size_mb,
+    get_recommended_model_spec,
+    inspect_model_reference,
+    resolve_model_reference,
+)
 
 from .preferences import (
     DEFAULT_UI_LANGUAGE,
@@ -51,6 +57,13 @@ from .preferences import (
 )
 from .i18n import tr
 from .styles import build_dialog_stylesheet
+
+MODEL_FILE_FILTER = (
+    "Model files (*.pt *.onnx);;"
+    "PyTorch weights (*.pt);;"
+    "ONNX models (*.onnx);;"
+    "All files (*)"
+)
 
 
 class SettingsDialog(QDialog):
@@ -203,6 +216,31 @@ class SettingsDialog(QDialog):
         calibration_layout.addWidget(self.calibrate_button)
         frame_layout.addLayout(calibration_layout)
 
+        pdf_scale_layout = QHBoxLayout()
+        lbl_pdf_scale = QLabel(
+            self._t("settings_pdf_render_scale", "Масштаб рендера PDF:")
+        )
+        lbl_pdf_scale.setMinimumWidth(DIALOG_LABEL_MIN_WIDTH)
+        pdf_scale_layout.addWidget(lbl_pdf_scale)
+        self.spin_pdf_render_scale = QDoubleSpinBox()
+        self.spin_pdf_render_scale.setRange(1.0, 8.0)
+        self.spin_pdf_render_scale.setSingleStep(0.5)
+        self.spin_pdf_render_scale.setDecimals(1)
+        self.spin_pdf_render_scale.setValue(
+            max(
+                1.0,
+                float(
+                    self.settings.value(
+                        "pdf_render_scale",
+                        PDF_RENDER_SCALE_DEFAULT,
+                    )
+                ),
+            )
+        )
+        self.spin_pdf_render_scale.setMinimumWidth(DIALOG_SPINBOX_MIN_WIDTH)
+        pdf_scale_layout.addWidget(self.spin_pdf_render_scale)
+        frame_layout.addLayout(pdf_scale_layout)
+
         cache_layout = QHBoxLayout()
         lbl_cache = QLabel(self._t("settings_use_cache", "Использовать кэш результатов:"))
         lbl_cache.setMinimumWidth(DIALOG_LABEL_MIN_WIDTH)
@@ -216,7 +254,9 @@ class SettingsDialog(QDialog):
         frame_layout.addLayout(cache_layout)
 
         detect_weights_layout = QHBoxLayout()
-        lbl_detect_weights = QLabel(self._t("settings_detect_model", "Модель детекции (.pt):"))
+        lbl_detect_weights = QLabel(
+            self._t("settings_detect_model", "Модель детекции (.pt/.onnx):")
+        )
         lbl_detect_weights.setMinimumWidth(DIALOG_LABEL_MIN_WIDTH)
         detect_weights_layout.addWidget(lbl_detect_weights)
         self.detect_weights_edit = QLineEdit()
@@ -231,11 +271,24 @@ class SettingsDialog(QDialog):
         self.detect_weights_button = QPushButton(self._t("settings_pick", "Выбрать"))
         self.detect_weights_button.clicked.connect(self._choose_detection_weights)
         detect_weights_layout.addWidget(self.detect_weights_button)
+        self.detect_weights_default_button = QPushButton(
+            self._t("settings_use_recommended", "Рекомендуемая")
+        )
+        self.detect_weights_default_button.clicked.connect(
+            self._apply_recommended_detection_model
+        )
+        detect_weights_layout.addWidget(self.detect_weights_default_button)
         frame_layout.addLayout(detect_weights_layout)
+        self.detect_model_status_label = QLabel()
+        self.detect_model_status_label.setWordWrap(True)
+        frame_layout.addWidget(self.detect_model_status_label)
 
         classify_weights_layout = QHBoxLayout()
         lbl_classify_weights = QLabel(
-            self._t("settings_classify_model", "Модель классификации (.pt):")
+            self._t(
+                "settings_classify_model",
+                "Модель классификации (.pt/.onnx):",
+            )
         )
         lbl_classify_weights.setMinimumWidth(DIALOG_LABEL_MIN_WIDTH)
         classify_weights_layout.addWidget(lbl_classify_weights)
@@ -253,7 +306,17 @@ class SettingsDialog(QDialog):
             self._choose_classification_weights
         )
         classify_weights_layout.addWidget(self.classify_weights_button)
+        self.classify_weights_default_button = QPushButton(
+            self._t("settings_use_recommended", "Рекомендуемая")
+        )
+        self.classify_weights_default_button.clicked.connect(
+            self._apply_recommended_classification_model
+        )
+        classify_weights_layout.addWidget(self.classify_weights_default_button)
         frame_layout.addLayout(classify_weights_layout)
+        self.classify_model_status_label = QLabel()
+        self.classify_model_status_label.setWordWrap(True)
+        frame_layout.addWidget(self.classify_model_status_label)
 
         report_layout = QHBoxLayout()
         lbl_report = QLabel(self._t("settings_report_dir", "Папка отчётов по умолчанию:"))
@@ -319,6 +382,14 @@ class SettingsDialog(QDialog):
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
+        self.detect_weights_edit.textChanged.connect(
+            self._refresh_detection_model_status
+        )
+        self.classify_weights_edit.textChanged.connect(
+            self._refresh_classification_model_status
+        )
+        self._refresh_detection_model_status()
+        self._refresh_classification_model_status()
 
     def _choose_report_dir(self) -> None:
         """Открывает выбор папки для отчётов."""
@@ -343,7 +414,7 @@ class SettingsDialog(QDialog):
             self,
             self._t("settings_choose_detect_model", "Выберите модель детекции"),
             current,
-            "PyTorch weights (*.pt);;All files (*)",
+            MODEL_FILE_FILTER,
         )
         if file_path:
             self.detect_weights_edit.setText(file_path)
@@ -355,10 +426,85 @@ class SettingsDialog(QDialog):
             self,
             self._t("settings_choose_classify_model", "Выберите модель классификации"),
             current,
-            "PyTorch weights (*.pt);;All files (*)",
+            MODEL_FILE_FILTER,
         )
         if file_path:
             self.classify_weights_edit.setText(file_path)
+
+    def _apply_recommended_detection_model(self) -> None:
+        """Fills the detection field with the recommended bundled model."""
+        spec = get_recommended_model_spec("detect")
+        if spec is not None:
+            self.detect_weights_edit.setText(spec.path)
+
+    def _apply_recommended_classification_model(self) -> None:
+        """Fills the classification field with the recommended bundled model."""
+        spec = get_recommended_model_spec("classify")
+        if spec is not None:
+            self.classify_weights_edit.setText(spec.path)
+
+    def _format_model_status(self, reference: str, *, role: str) -> str:
+        """Builds a localized model status string for the current field value."""
+        status = inspect_model_reference(
+            reference,
+            role=role,
+            base_dirs=self._base_dirs,
+        )
+        if status.exists:
+            size_text = format_size_mb(status.size_bytes)
+            if status.recommended:
+                return self._t(
+                    "settings_model_status_recommended",
+                    "Рекомендуемая модель: {label} ({filename}, {size})",
+                ).format(
+                    label=status.label,
+                    filename=status.filename,
+                    size=size_text,
+                )
+            if status.is_catalog_model:
+                return self._t(
+                    "settings_model_status_catalog",
+                    "Доступная модель: {label} ({filename}, {size})",
+                ).format(
+                    label=status.label,
+                    filename=status.filename,
+                    size=size_text,
+                )
+            return self._t(
+                "settings_model_status_custom",
+                "Пользовательский файл: {filename} ({size})",
+            ).format(
+                filename=status.filename,
+                size=size_text,
+            )
+
+        if status.is_catalog_model:
+            return self._t(
+                "settings_model_status_missing_catalog",
+                "Модель из каталога не найдена: {filename}",
+            ).format(filename=status.filename)
+        return self._t(
+            "settings_model_status_missing",
+            "Файл модели не найден: {path}",
+        ).format(path=reference.strip() or "-")
+
+    def _refresh_detection_model_status(self) -> None:
+        """Refreshes the detection model status label."""
+        self.detect_model_status_label.setText(
+            self._format_model_status(
+                self.detect_weights_edit.text(),
+                role="detect",
+            )
+        )
+
+    def _refresh_classification_model_status(self) -> None:
+        """Refreshes the classification model status label."""
+        self.classify_model_status_label.setText(
+            self._format_model_status(
+                self.classify_weights_edit.text(),
+                role="classify",
+            )
+        )
 
     def _reset_defaults(self) -> None:
         """Возвращает параметры интерфейса и моделей к значениям по умолчанию."""
@@ -367,6 +513,7 @@ class SettingsDialog(QDialog):
         self.spin_detect_conf.setValue(DETECTION_CONFIDENCE_THRESHOLD)
         self.spin_detect_iou.setValue(DETECTION_IOU_THRESHOLD)
         self.spin_pixels_per_mm.setValue(CALIBRATION_PIXELS_PER_MM_DEFAULT)
+        self.spin_pdf_render_scale.setValue(PDF_RENDER_SCALE_DEFAULT)
         self.check_use_cache.setChecked(USE_CACHE_DEFAULT)
         self.detect_weights_edit.setText(str(DEFAULT_WEIGHTS_PATH))
         self.classify_weights_edit.setText(str(DEFAULT_CLASSIFY_WEIGHTS_PATH))
@@ -377,6 +524,8 @@ class SettingsDialog(QDialog):
         language_index = self.language_combo.findData(DEFAULT_UI_LANGUAGE)
         if language_index >= 0:
             self.language_combo.setCurrentIndex(language_index)
+        self._refresh_detection_model_status()
+        self._refresh_classification_model_status()
 
     def save_settings(self) -> bool:
         """Сохраняет параметры и применяет их в рантайме."""
@@ -400,12 +549,17 @@ class SettingsDialog(QDialog):
         self.settings.setValue("detect_conf", self.spin_detect_conf.value())
         self.settings.setValue("detect_iou", self.spin_detect_iou.value())
         self.settings.setValue("pixels_per_mm", self.spin_pixels_per_mm.value())
+        self.settings.setValue(
+            "pdf_render_scale",
+            self.spin_pdf_render_scale.value(),
+        )
         self.settings.setValue("use_cache", self.check_use_cache.isChecked())
 
         detect_input = self.detect_weights_edit.text().strip()
         detect_source = detect_input or str(DEFAULT_WEIGHTS_PATH)
-        detect_weights = resolve_weights_path(
+        detect_weights = resolve_model_reference(
             detect_source,
+            role="detect",
             base_dirs=self._base_dirs,
         )
         if detect_weights is None:
@@ -421,8 +575,9 @@ class SettingsDialog(QDialog):
 
         classify_input = self.classify_weights_edit.text().strip()
         classify_source = classify_input or str(DEFAULT_CLASSIFY_WEIGHTS_PATH)
-        classify_weights = resolve_weights_path(
+        classify_weights = resolve_model_reference(
             classify_source,
+            role="classify",
             base_dirs=self._base_dirs,
         )
         if classify_weights is None:

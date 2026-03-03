@@ -76,6 +76,7 @@ class BBoxItem(QGraphicsRectItem):
             | QGraphicsItem.ItemSendsGeometryChanges
         )
         self._editable = False
+        self._highlighted = False
         self._handle = None
         self._handles = {}
         self._update_handles()
@@ -100,6 +101,11 @@ class BBoxItem(QGraphicsRectItem):
             self.setSelected(False)
         self.update()
 
+    def setHighlighted(self, state: bool) -> None:
+        """Включает или выключает визуальное выделение bbox."""
+        self._highlighted = bool(state)
+        self.update()
+
     def paint(
         self,
         painter,
@@ -108,6 +114,12 @@ class BBoxItem(QGraphicsRectItem):
     ):
         """Отрисовывает рамку и маркеры редактирования в активном режиме."""
         super().paint(painter, option, widget)
+        if self._highlighted:
+            painter.save()
+            painter.setBrush(Qt.NoBrush)
+            painter.setPen(QPen(QColor(255, 255, 255), BBOX_PEN_WIDTH + 1))
+            painter.drawRect(self.rect())
+            painter.restore()
         self._draw_overlay_labels(painter)
         if self._editable:
             painter.setBrush(Qt.white)

@@ -64,3 +64,20 @@ def test_export_service_creates_yolo_and_annotated_images(tmp_path):
         path.suffix.lower() == ".jpg"
         for path in annotated_dir.glob("*.jpg")
     )
+
+
+def test_export_service_creates_metadata_sidecar(tmp_path):
+    service = ExportService()
+    metadata = {
+        "preset": "review",
+        "formats": ["json", "csv"],
+        "pixels_per_mm": 6.5,
+    }
+
+    metadata_path = service.export_metadata(metadata, tmp_path)
+
+    assert metadata_path.is_file()
+    payload = json.loads(metadata_path.read_text(encoding="utf-8"))
+    assert payload["preset"] == "review"
+    assert payload["formats"] == ["json", "csv"]
+    assert payload["pixels_per_mm"] == 6.5

@@ -41,6 +41,7 @@ class OriginalImage:
     """Контейнер для исходных изображений и результатов анализа."""
 
     file_path: str = ""
+    source_files: list[str] = field(default_factory=list)
     images: list[np.ndarray | Image.Image] = field(default_factory=list)
     masks: list[np.ndarray | Image.Image] = field(default_factory=list)
     final_images: list[np.ndarray | Image.Image] = field(default_factory=list)

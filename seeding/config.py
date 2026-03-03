@@ -4,8 +4,10 @@
 Все магические числа вынесены в именованные константы.
 """
 
-from pathlib import Path
 import os
+from pathlib import Path
+
+from platformdirs import user_data_dir
 
 
 # -----------------------------------------------------------------------------
@@ -13,6 +15,14 @@ import os
 # -----------------------------------------------------------------------------
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
+
+
+# -----------------------------------------------------------------------------
+# QSettings
+# -----------------------------------------------------------------------------
+
+QSETTINGS_ORG = "SeedingApp"
+QSETTINGS_APP = "Detector"
 
 # Путь к весам YOLOv8 детекции. Можно задать через YOLO_WEIGHTS_PATH
 DEFAULT_WEIGHTS_PATH = Path(
@@ -157,7 +167,8 @@ PDF_LABEL_OFFSET_Y = 5
 # -----------------------------------------------------------------------------
 
 # Масштаб рендеринга страниц PDF (4 = увеличенное разрешение)
-PDF_RENDER_SCALE = 4
+PDF_RENDER_SCALE_DEFAULT = 4.0
+PDF_RENDER_SCALE = PDF_RENDER_SCALE_DEFAULT
 
 
 # -----------------------------------------------------------------------------
@@ -186,13 +197,8 @@ CALIBRATION_PIXELS_PER_MM_DEFAULT = 0.0
 # Использовать кэш детекции/классификации по умолчанию.
 USE_CACHE_DEFAULT = True
 
-# Каталог для локального кэша и истории измерений.
-LOCAL_STORAGE_DIR = PROJECT_ROOT / "results" / "storage"
+# Legacy-каталог в корне проекта, который использовался до переноса в user-data.
+LEGACY_LOCAL_STORAGE_DIR = PROJECT_ROOT / "results" / "storage"
 
-
-# -----------------------------------------------------------------------------
-# QSettings
-# -----------------------------------------------------------------------------
-
-QSETTINGS_ORG = "SeedingApp"
-QSETTINGS_APP = "Detector"
+# Каталог для локального кэша и истории измерений в user-data текущего пользователя.
+LOCAL_STORAGE_DIR = Path(user_data_dir(QSETTINGS_APP, QSETTINGS_ORG)) / "storage"

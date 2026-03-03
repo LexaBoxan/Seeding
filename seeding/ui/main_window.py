@@ -74,7 +74,6 @@ from PyQt5.QtWidgets import (
     QTextEdit,
     QShortcut,
 )
-from ultralytics import YOLO
 
 import seeding.config as cfg
 from seeding.controllers import AppController
@@ -89,7 +88,7 @@ from seeding.config import (
     PANEL_LAYERS_MAX_WIDTH,
     PANEL_LAYERS_MIN_WIDTH,
     PANEL_LAYOUT_MARGINS,
-    PDF_RENDER_SCALE,
+    PDF_RENDER_SCALE_DEFAULT,
     QSETTINGS_APP,
     QSETTINGS_ORG,
     ROTATE_ANGLE_DEG,
@@ -105,6 +104,15 @@ from seeding.config import (
     ZOOM_FACTOR_INCREMENT,
     ZOOM_FACTOR_INITIAL,
 )
+from seeding.inference import (
+    InferenceBackend,
+    infer_backend_kind,
+    load_inference_backend,
+)
+from seeding.model_registry import (
+    build_model_selector_options,
+    resolve_model_reference,
+)
 from seeding.models import (
     AllClassImage,
     AppState,
@@ -114,7 +122,7 @@ from seeding.models import (
 )
 from seeding.services import ExportService, ImageService, ReportService
 from seeding.storage import StorageService
-from seeding.utils import clip_bbox_to_image, resolve_weights_path, rotate_bbox
+from seeding.utils import clip_bbox_to_image, rotate_bbox
 
 from .bbox_item import BBoxItem
 from .export_dialog import ExportDialog
@@ -310,7 +318,7 @@ class DraggableScrollArea(QScrollArea):
 
 
 class ModelLoadWorker(QThread):
-    """Загружает модель YOLO в фоновом потоке."""
+    """Загружает backend инференса в фоновом потоке."""
 
     model_loaded = pyqtSignal(object)
     model_error = pyqtSignal(str)
@@ -321,9 +329,9 @@ class ModelLoadWorker(QThread):
         self.weights_path = weights_path
 
     def run(self) -> None:  # pragma: no cover - поток
-        """Загружает YOLO-модель и отправляет результат через сигналы Qt."""
+        """Загружает backend и отправляет результат через сигналы Qt."""
         try:
-            model = YOLO(self.weights_path)
+            model = load_inference_backend(self.weights_path)
             self.model_loaded.emit(model)
         except Exception as e:
             logger.exception("Ошибка загрузки модели")
@@ -339,7 +347,7 @@ class DetectionWorker(QThread):
         self,
         index: int,
         image: np.ndarray,
-        model: YOLO | None = None,
+        model: InferenceBackend | None = None,
         weights_path: str | None = None,
         conf_threshold: float = DETECTION_CONFIDENCE_THRESHOLD,
     ):
@@ -358,10 +366,13 @@ class DetectionWorker(QThread):
         """Выполняет детекцию и отправляет предсказания в основной поток."""
         model = self.model
         if model is None and self.weights_path:
-            model = YOLO(self.weights_path)
+            model = load_inference_backend(self.weights_path)
         if model is None:
             return
-        results = model(self.image, conf=self.conf_threshold)
+        results = model.predict(
+            self.image,
+            conf_threshold=self.conf_threshold,
+        )
         self.result_ready.emit(self.index, results)
 
 
@@ -374,7 +385,7 @@ class FindAllWorker(QThread):
     def __init__(
         self,
         images: list,
-        model: YOLO,
+        model: InferenceBackend,
         conf_threshold: float = DETECTION_CONFIDENCE_THRESHOLD,
         *,
         indices: list[int] | None = None,
@@ -415,10 +426,90 @@ class FindAllWorker(QThread):
                 if local_idx < len(self.indices)
                 else local_idx
             )
-            results = self.model(image, conf=self.conf_threshold)
+            results = self.model.predict(
+                image,
+                conf_threshold=self.conf_threshold,
+            )
             self.result_ready.emit(page_index, results)
             processed += 1
             self.progress_updated.emit(processed, total)
+
+
+class PdfLoadWorker(QThread):
+    """Фоновый рендер страниц PDF в изображения."""
+
+    progress_updated = pyqtSignal(int, int)
+    result_ready = pyqtSignal(str, object)
+    load_error = pyqtSignal(str, str)
+    load_cancelled = pyqtSignal(str, int)
+
+    def __init__(
+        self,
+        pdf_path: str,
+        render_scale: float,
+        session_id: int,
+    ) -> None:
+        """Сохраняет путь к PDF и масштаб рендера для фоновой обработки."""
+        super().__init__()
+        self.pdf_path = pdf_path
+        self.render_scale = max(float(render_scale), 1.0)
+        self.session_id = int(session_id)
+        self._cancel = False
+
+    def cancel(self) -> None:
+        """Запрашивает отмену фоновой загрузки PDF."""
+        self._cancel = True
+
+    def run(self) -> None:  # pragma: no cover - поток
+        """Рендерит PDF постранично и сообщает прогресс в основной поток."""
+        doc = None
+        rendered_pages: list[np.ndarray] = []
+        try:
+            doc = fitz.open(self.pdf_path)
+            total = int(doc.page_count)
+            self.progress_updated.emit(0, total)
+
+            for page_num in range(total):
+                if self._cancel:
+                    self.load_cancelled.emit(self.pdf_path, len(rendered_pages))
+                    return
+
+                page = doc.load_page(page_num)
+                try:
+                    pix = page.get_pixmap(
+                        matrix=fitz.Matrix(
+                            self.render_scale,
+                            self.render_scale,
+                        )
+                    )
+                except Exception as error:
+                    self.load_error.emit(
+                        self.pdf_path,
+                        f"page {page_num + 1}: {error}",
+                    )
+                    return
+
+                image = np.frombuffer(pix.samples, dtype=np.uint8).reshape(
+                    pix.height,
+                    pix.width,
+                    pix.n,
+                )
+                if pix.n == 4:
+                    image = image[:, :, :3].copy()
+                image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+                rendered_pages.append(image)
+                self.progress_updated.emit(page_num + 1, total)
+
+            self.result_ready.emit(self.pdf_path, rendered_pages)
+        except Exception as error:
+            logger.exception("Ошибка при загрузке PDF %s", self.pdf_path)
+            self.load_error.emit(self.pdf_path, str(error))
+        finally:
+            if doc is not None:
+                try:
+                    doc.close()
+                except Exception:
+                    logger.debug("Не удалось закрыть PDF %s", self.pdf_path)
 
 
 class ImageEditor(QMainWindow):
@@ -440,6 +531,7 @@ class ImageEditor(QMainWindow):
         self.classify_weights_path = str(DEFAULT_CLASSIFY_WEIGHTS_PATH)
         self.detection_confidence_threshold = DETECTION_CONFIDENCE_THRESHOLD
         self.detection_iou_threshold = DETECTION_IOU_THRESHOLD
+        self.pdf_render_scale = PDF_RENDER_SCALE_DEFAULT
         self.pixels_per_mm = CALIBRATION_PIXELS_PER_MM_DEFAULT
         self.use_cache = USE_CACHE_DEFAULT
 
@@ -495,6 +587,9 @@ class ImageEditor(QMainWindow):
         self._activity_log: list[str] = []
         self._auto_theme_fallback = "dark"
         self._last_detection_count = 0
+        self._active_result_index: int | None = None
+        self._active_result_page_index: int | None = None
+        self._result_bbox_items: dict[int, BBoxItem] = {}
         self._pending_classify_after_find_all = False
 
         self.setup_ui()
@@ -506,6 +601,11 @@ class ImageEditor(QMainWindow):
         self.statusBar().addPermanentWidget(self.progress_bar)
         self._find_all_progress_dialog: QProgressDialog | None = None
         self._find_all_cancelled = False
+        self._pdf_load_worker = None
+        self._pdf_load_progress_dialog: QProgressDialog | None = None
+        self._pdf_load_queue: list[str] = []
+        self._pdf_loading_path = ""
+        self._pdf_session_id = 0
 
         self._start_model_loading()
 
@@ -554,6 +654,17 @@ class ImageEditor(QMainWindow):
                 CALIBRATION_PIXELS_PER_MM_DEFAULT,
             ),
             0.0,
+        )
+        self.pdf_render_scale = min(
+            max(
+                self._read_float_setting(
+                    settings,
+                    "pdf_render_scale",
+                    PDF_RENDER_SCALE_DEFAULT,
+                ),
+                1.0,
+            ),
+            8.0,
         )
         self.use_cache = bool(
             settings.value("use_cache", USE_CACHE_DEFAULT, type=bool)
@@ -1056,11 +1167,11 @@ class ImageEditor(QMainWindow):
         self.results_found_chip.setObjectName("foundChip")
         results_layout.addWidget(self.results_found_chip, 0, Qt.AlignLeft)
 
-        self.results_text = QTextEdit(results_card)
-        self.results_text.setObjectName("resultsText")
-        self.results_text.setReadOnly(True)
-        self.results_text.setMinimumHeight(120)
-        results_layout.addWidget(self.results_text, 1)
+        self.results_list = QListWidget(results_card)
+        self.results_list.setObjectName("resultsList")
+        self.results_list.setMinimumHeight(120)
+        self.results_list.itemClicked.connect(self._on_result_item_clicked)
+        results_layout.addWidget(self.results_list, 1)
         layout.addWidget(results_card, 0)
 
         history_card, history_layout = self._build_panel_card(
@@ -1379,12 +1490,7 @@ class ImageEditor(QMainWindow):
                 current_path=self.weights_path,
                 header_key="header_detect_model",
                 header_fallback="Detection",
-                preset_options=(
-                    ("YOLOv8 Nano (fast)", "models/yolov8n.pt"),
-                    ("YOLOv8 Small", "models/yolov8s.pt"),
-                    ("YOLOv8 Medium", "models/yolov8m.pt"),
-                    ("YOLOv8 Large (accurate)", "models/yolov8l.pt"),
-                ),
+                model_role="detect",
             )
         if hasattr(self, "classify_model_selector_combo"):
             self._populate_single_model_combo(
@@ -1392,12 +1498,7 @@ class ImageEditor(QMainWindow):
                 current_path=self.classify_weights_path,
                 header_key="header_classify_model",
                 header_fallback="Segmentation",
-                preset_options=(
-                    ("YOLOv8 Nano Seg", "models/yolov8n-seg.pt"),
-                    ("YOLOv8 Small Seg", "models/yolov8s-seg.pt"),
-                    ("YOLOv8 Medium Seg", "models/yolov8m-seg.pt"),
-                    ("YOLOv8 Large Seg", "models/yolov8l-seg.pt"),
-                ),
+                model_role="classify",
             )
 
     def _populate_single_model_combo(
@@ -1407,7 +1508,7 @@ class ImageEditor(QMainWindow):
         current_path: str,
         header_key: str,
         header_fallback: str,
-        preset_options: Sequence[tuple[str, str]],
+        model_role: str,
     ) -> None:
         """Заполняет переданный комбобокс модельными путями без дубликатов."""
         current = str(current_path)
@@ -1420,18 +1521,20 @@ class ImageEditor(QMainWindow):
                 current,
             )
         ]
-        for label, raw_path in preset_options:
-            resolved = resolve_weights_path(
-                raw_path,
+        options.extend(
+            build_model_selector_options(
+                model_role,
                 base_dirs=(cfg.PROJECT_ROOT, Path.cwd()),
             )
-            if resolved is None:
-                continue
-            options.append((label, str(resolved)))
+        )
 
         models_dir = cfg.PROJECT_ROOT / "models"
         if models_dir.is_dir():
-            for model_path in sorted(models_dir.glob("*.pt")):
+            model_paths = sorted(
+                list(models_dir.glob("*.pt"))
+                + list(models_dir.glob("*.onnx"))
+            )
+            for model_path in model_paths:
                 options.append((f"Custom: {model_path.name}", str(model_path)))
 
         combo.blockSignals(True)
@@ -1459,8 +1562,9 @@ class ImageEditor(QMainWindow):
         selected_path = str(self.model_selector_combo.itemData(index) or "").strip()
         if not selected_path:
             return
-        resolved = resolve_weights_path(
+        resolved = resolve_model_reference(
             selected_path,
+            role="detect",
             base_dirs=(cfg.PROJECT_ROOT, Path.cwd()),
         )
         if resolved is None:
@@ -1496,8 +1600,9 @@ class ImageEditor(QMainWindow):
         ).strip()
         if not selected_path:
             return
-        resolved = resolve_weights_path(
+        resolved = resolve_model_reference(
             selected_path,
+            role="classify",
             base_dirs=(cfg.PROJECT_ROOT, Path.cwd()),
         )
         if resolved is None:
@@ -1584,31 +1689,153 @@ class ImageEditor(QMainWindow):
             self.project_files_list.setCurrentRow(index)
             self.project_files_list.blockSignals(False)
 
-    def _refresh_detection_result_card(self) -> None:
-        """    ."""
-        if not hasattr(self, "results_text"):
+    def _on_result_item_clicked(self, item: QListWidgetItem) -> None:
+        """Фокусирует bbox по клику на элементе списка результатов."""
+        payload = item.data(Qt.UserRole) or {}
+        try:
+            page_index = int(payload.get("page_index", self._active_image_index))
+            object_index = int(payload.get("object_index", -1))
+        except (TypeError, ValueError):
             return
+        self._focus_detection_result(page_index, object_index)
+
+    def _apply_active_result_highlight(self) -> None:
+        """Подсвечивает bbox, соответствующий активному элементу списка результатов."""
+        active_index = (
+            self._active_result_index
+            if self._active_result_page_index == self._active_image_index
+            else None
+        )
+        for result_index, item in self._result_bbox_items.items():
+            item.setHighlighted(result_index == active_index)
+
+    def _zoom_to_scene_rect(self, rect: QRectF, *, padding: float = 24.0) -> None:
+        """Приближает сцену к указанному прямоугольнику."""
+        if rect.isNull() or rect.width() <= 0 or rect.height() <= 0:
+            return
+
+        padded_rect = rect.adjusted(-padding, -padding, padding, padding)
+        scene_rect = self.graphics_scene.sceneRect()
+        if scene_rect.isValid():
+            padded_rect = padded_rect.intersected(scene_rect)
+        self.graphics_view.fitInView(padded_rect, Qt.KeepAspectRatio)
+        self.zoom_factor = max(
+            float(self.graphics_view.transform().m11()),
+            getattr(self, "min_fit_zoom", 1.0),
+        )
+        self.app_state.zoom_factor = self.zoom_factor
+
+    def _focus_detection_result(self, page_index: int, object_index: int) -> None:
+        """Открывает страницу результата, подсвечивает bbox и приближает его."""
+        if (
+            not self.image_storage.class_object_image
+            or page_index < 0
+            or page_index >= len(self.image_storage.class_object_image)
+        ):
+            return
+
+        objects = self.image_storage.class_object_image[page_index] or []
+        if object_index < 0 or object_index >= len(objects):
+            return
+
+        if not self._show_boxes:
+            self._show_boxes = True
+            if hasattr(self, "show_boxes_button"):
+                self.show_boxes_button.setChecked(True)
+
+        self._active_result_page_index = page_index
+        self._active_result_index = object_index
+        self.display_image_with_boxes(page_index)
+
+        bbox_item = self._result_bbox_items.get(object_index)
+        if bbox_item is None:
+            return
+
+        self._apply_active_result_highlight()
+        self._zoom_to_scene_rect(bbox_item.sceneBoundingRect())
+        if hasattr(self, "results_list"):
+            self.results_list.blockSignals(True)
+            self.results_list.setCurrentRow(object_index)
+            self.results_list.blockSignals(False)
+
+    def _refresh_detection_result_card(self) -> None:
+        """Обновляет карточку результатов детекции для текущей страницы."""
+        if not hasattr(self, "results_list"):
+            return
+
+        if self._active_result_page_index != self._active_image_index:
+            self._active_result_page_index = None
+            self._active_result_index = None
+
         count = 0
-        lines: list[str] = []
+        selected_row = -1
+        self.results_list.blockSignals(True)
+        self.results_list.clear()
         if (
             self.image_storage.class_object_image
             and 0 <= self._active_image_index < len(self.image_storage.class_object_image)
         ):
-            objects = self.image_storage.class_object_image[self._active_image_index] or []
+            objects = self.image_storage.class_object_image[
+                self._active_image_index
+            ] or []
             count = len(objects)
-            for idx, obj in enumerate(objects[:20]):
-                lines.append(f"{self._tr('class_seedling', 'Seedling')} #{idx + 1}")
-                lines.append(
-                    f"{self._tr('confidence_label', 'Confidence')}: {obj.confidence * 100:.1f}%"
+            for idx, obj in enumerate(objects):
+                item = QListWidgetItem(
+                    (
+                        f"{self._tr('class_seedling', 'Seedling')} #{idx + 1} | "
+                        f"{obj.confidence * 100:.1f}%"
+                    )
                 )
-                lines.append("")
+                item.setData(
+                    Qt.UserRole,
+                    {
+                        "page_index": self._active_image_index,
+                        "object_index": idx,
+                    },
+                )
+                self.results_list.addItem(item)
+                if idx == self._active_result_index:
+                    selected_row = idx
 
         self._last_detection_count = count
         if hasattr(self, "results_found_chip"):
             self.results_found_chip.setText(
                 self._tr("results_found", "Found: {count}").format(count=count)
             )
-        self.results_text.setPlainText("\n".join(lines).strip())
+        if selected_row >= 0:
+            self.results_list.setCurrentRow(selected_row)
+        else:
+            self.results_list.clearSelection()
+        self.results_list.blockSignals(False)
+
+    def _current_source_file(self, index: int | None = None) -> str:
+        """Возвращает исходный файл для активного изображения или PDF-страницы."""
+        source_index = self._active_image_index if index is None else index
+        try:
+            source_index = int(source_index)
+        except (TypeError, ValueError):
+            source_index = self._active_image_index
+
+        source_files = getattr(self.image_storage, "source_files", [])
+        if 0 <= source_index < len(source_files):
+            source_file = str(source_files[source_index]).strip()
+            if source_file:
+                return source_file
+
+        return str(getattr(self.image_storage, "file_path", "") or "")
+
+    def _restore_calibration_for_index(self, index: int | None = None) -> None:
+        """Восстанавливает калибровку для выбранного файла или страницы."""
+        pixels_per_mm = CALIBRATION_PIXELS_PER_MM_DEFAULT
+        source_file = self._current_source_file(index)
+        if source_file:
+            stored_value = self.storage_service.load_calibration(source_file)
+            if stored_value is not None and stored_value > 0:
+                pixels_per_mm = float(stored_value)
+
+        self.pixels_per_mm = pixels_per_mm
+        self.app_state.pixels_per_mm = pixels_per_mm
+        self._refresh_calibration_card()
 
     def _refresh_calibration_card(self) -> None:
         """      ."""
@@ -1617,37 +1844,46 @@ class ImageEditor(QMainWindow):
         if self.pixels_per_mm > 0:
             mm_per_px = 1.0 / self.pixels_per_mm
             self.calibration_px_per_mm_label.setText(
-                self._tr("calibration_coeff", "Coefficient: {value:.2f} px/mm").format(
+                self._tr(
+                    "calibration_coeff_value",
+                    "Coefficient: {value:.2f} px/mm",
+                ).format(
                     value=self.pixels_per_mm
                 )
             )
             self.calibration_mm_per_px_label.setText(
-                self._tr("calibration_step", "Step: {value:.3f} mm/px").format(
+                self._tr(
+                    "calibration_step_value",
+                    "Step: {value:.3f} mm/px",
+                ).format(
                     value=mm_per_px
                 )
             )
             self.calibration_scale_label.setText(
                 self._tr(
-                    "calibration_scale",
+                    "calibration_scale_value",
                     "Scale: 10 mm = {value:.1f} px",
                 ).format(value=self.pixels_per_mm * 10.0)
             )
         else:
             self.calibration_px_per_mm_label.setText(
-                self._tr("calibration_coeff", "Coefficient: not set")
+                self._tr("calibration_coeff_empty", "Coefficient: not set")
             )
             self.calibration_mm_per_px_label.setText(
-                self._tr("calibration_step", "Step: not set")
+                self._tr("calibration_step_empty", "Step: not set")
             )
             self.calibration_scale_label.setText(
                 self._tr(
-                    "calibration_scale",
+                    "calibration_scale_empty",
                     "Run calibration to measure in mm.",
                 )
             )
 
     def _reset_calibration(self) -> None:
         """      ."""
+        source_file = self._current_source_file()
+        if source_file:
+            self.storage_service.clear_calibration(source_file)
         self.pixels_per_mm = CALIBRATION_PIXELS_PER_MM_DEFAULT
         self.app_state.pixels_per_mm = self.pixels_per_mm
         settings = QSettings(QSETTINGS_ORG, QSETTINGS_APP)
@@ -2139,7 +2375,7 @@ class ImageEditor(QMainWindow):
 
         record = MeasurementRecord(
             timestamp=datetime.now().isoformat(timespec="seconds"),
-            source_file=self.image_storage.file_path,
+            source_file=self._current_source_file(),
             page_index=self._active_image_index,
             object_index=-1,
             width_px=width_px,
@@ -2240,6 +2476,12 @@ class ImageEditor(QMainWindow):
 
         self.pixels_per_mm = float(diagonal_px) / float(mm_value)
         self.app_state.pixels_per_mm = self.pixels_per_mm
+        source_file = self._current_source_file()
+        if source_file:
+            self.storage_service.save_calibration(
+                source_file,
+                self.pixels_per_mm,
+            )
         settings = QSettings(QSETTINGS_ORG, QSETTINGS_APP)
         settings.setValue("pixels_per_mm", self.pixels_per_mm)
         settings.sync()
@@ -2679,7 +2921,7 @@ class ImageEditor(QMainWindow):
         sample = image[::16, ::16]
         checksum = int(sample.astype(np.uint64).sum())
         return self.storage_service.build_detection_cache_key(
-            source_file=self.image_storage.file_path,
+            source_file=self._current_source_file(page_index),
             page_index=page_index,
             image_shape=image.shape,
             image_checksum=checksum,
@@ -2700,7 +2942,7 @@ class ImageEditor(QMainWindow):
             crop_sample = obj.image[0][::8, ::8]
             crop_checksum = int(crop_sample.astype(np.uint64).sum())
         return self.storage_service.build_classification_cache_key(
-            source_file=self.image_storage.file_path,
+            source_file=self._current_source_file(page_index),
             page_index=page_index,
             object_index=object_index,
             object_bbox=obj.bbox,
@@ -2769,7 +3011,7 @@ class ImageEditor(QMainWindow):
                 self.image_service.sync_crops_and_parts(self.image_storage)
                 return cached_parts
 
-        results = self.classify_model(seeding_obj.image[0])
+        results = self.classify_model.predict(seeding_obj.image[0])
         parts = self.app_controller.run_classification_for_selection(
             self.app_state,
             page_index,
@@ -2779,6 +3021,36 @@ class ImageEditor(QMainWindow):
         if self.use_cache:
             self.storage_service.save_classification_parts(cache_key, parts)
         return parts
+
+    def _build_export_metadata(
+        self,
+        *,
+        selected_preset: str,
+        options: dict[str, bool],
+    ) -> dict[str, object]:
+        """Собирает метаданные экспорта для sidecar-файла."""
+        enabled_formats = [
+            name
+            for name, enabled in options.items()
+            if enabled and name != "metadata"
+        ]
+        return {
+            "exported_at": datetime.now().isoformat(timespec="seconds"),
+            "preset": selected_preset,
+            "formats": enabled_formats,
+            "pages_count": len(self.image_storage.images),
+            "source_file": self.image_storage.file_path,
+            "source_files": list(self.image_storage.source_files),
+            "detect_weights_path": self.weights_path,
+            "detect_backend": infer_backend_kind(self.weights_path),
+            "classify_weights_path": self.classify_weights_path,
+            "classify_backend": infer_backend_kind(self.classify_weights_path),
+            "detection_confidence_threshold": self.detection_confidence_threshold,
+            "detection_iou_threshold": self.detection_iou_threshold,
+            "pixels_per_mm": self.pixels_per_mm,
+            "pdf_render_scale": self.pdf_render_scale,
+            "use_cache": self.use_cache,
+        }
 
     def export_results(self) -> None:
         """Экспортирует результаты в выбранные форматы."""
@@ -2792,6 +3064,7 @@ class ImageEditor(QMainWindow):
         dialog = ExportDialog(
             self,
             default_dir=self._default_report_dir(),
+            language=self.current_language,
         )
         if dialog.exec_() != QDialog.Accepted:
             return
@@ -2838,6 +3111,15 @@ class ImageEditor(QMainWindow):
                     output_dir,
                 )
                 exported.append(str(path))
+            if options["metadata"]:
+                path = self.export_service.export_metadata(
+                    self._build_export_metadata(
+                        selected_preset=dialog.selected_preset,
+                        options=options,
+                    ),
+                    output_dir,
+                )
+                exported.append(str(path))
         except Exception as error:
             logger.exception("Ошибка экспорта: %s", error)
             self._show_error_message(
@@ -2864,9 +3146,18 @@ class ImageEditor(QMainWindow):
     def _reset_project_data(self) -> None:
         """Сбрасывает текущие данные проекта перед новым открытием файлов."""
         self._pending_classify_after_find_all = False
+        self._pdf_session_id += 1
+        self._pdf_load_queue.clear()
+        if self._pdf_load_worker is not None:
+            self._pdf_load_worker.cancel()
         self.image_storage = OriginalImage()
         self.app_state.image_storage = self.image_storage
         self.app_state.selected_item = None
+        self._active_result_index = None
+        self._active_result_page_index = None
+        self._result_bbox_items = {}
+        self.pixels_per_mm = CALIBRATION_PIXELS_PER_MM_DEFAULT
+        self.app_state.pixels_per_mm = self.pixels_per_mm
         self._reset_measure_state(clear_items=True)
         self.tree_widget.clear()
         self._refresh_tree_filter_classes()
@@ -2876,12 +3167,13 @@ class ImageEditor(QMainWindow):
         self._show_empty_state()
         self._refresh_project_files_list()
         self._refresh_detection_result_card()
+        self._refresh_calibration_card()
 
     def _append_files_to_project(self, files: Sequence[str]) -> None:
         """Добавляет выбранные файлы в текущий проект."""
         for file_path in files:
             if file_path.lower().endswith(".pdf"):
-                self._add_pdf(file_path)
+                self._queue_pdf_load(file_path)
             else:
                 self._add_image(file_path)
 
@@ -3029,6 +3321,15 @@ class ImageEditor(QMainWindow):
             settings = QSettings(QSETTINGS_ORG, QSETTINGS_APP)
             self._load_runtime_settings(settings)
             self.app_state.report_dir = settings.value("report_dir", "", type=str)
+            current_source = self._current_source_file()
+            if current_source:
+                if self.pixels_per_mm > 0:
+                    self.storage_service.save_calibration(
+                        current_source,
+                        self.pixels_per_mm,
+                    )
+                else:
+                    self.storage_service.clear_calibration(current_source)
             self._apply_theme(dialog.selected_theme)
             self._apply_language(dialog.selected_language)
             if self.weights_path != previous_detect_weights:
@@ -3363,7 +3664,7 @@ class ImageEditor(QMainWindow):
 
         record = MeasurementRecord(
             timestamp=datetime.now().isoformat(timespec="seconds"),
-            source_file=self.image_storage.file_path,
+            source_file=self._current_source_file(parent_idx),
             page_index=parent_idx,
             object_index=seed_idx,
             width_px=width,
@@ -3417,7 +3718,9 @@ class ImageEditor(QMainWindow):
 
         if self.classify_model is None:
             try:
-                self.classify_model = YOLO(self.classify_weights_path)
+                self.classify_model = load_inference_backend(
+                    self.classify_weights_path
+                )
             except Exception as e:
                 self._show_error_message(
                     self._tr("status_model_error", "Ошибка загрузки модели"),
@@ -3742,6 +4045,7 @@ class ImageEditor(QMainWindow):
 
         idx = len(self.image_storage.images)
         self.image_storage.images.append(image)
+        self.image_storage.source_files.append(file_path)
 
         if self.image_storage.class_object_image is None:
             self.image_storage.class_object_image = []
@@ -3763,7 +4067,7 @@ class ImageEditor(QMainWindow):
 
             for page_num in range(doc.page_count):
                 page = doc.load_page(page_num)
-                mat = fitz.Matrix(PDF_RENDER_SCALE, PDF_RENDER_SCALE)
+                mat = fitz.Matrix(self.pdf_render_scale, self.pdf_render_scale)
                 pix = page.get_pixmap(matrix=mat)
                 img = np.frombuffer(pix.samples, dtype=np.uint8).reshape(
                     pix.height, pix.width, pix.n
@@ -3773,6 +4077,7 @@ class ImageEditor(QMainWindow):
                 img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
 
                 self.image_storage.images.append(img)
+                self.image_storage.source_files.append(pdf_path)
 
                 if self.image_storage.class_object_image is None:
                     self.image_storage.class_object_image = []
@@ -3794,6 +4099,273 @@ class ImageEditor(QMainWindow):
                 "Ошибка загрузки PDF",
                 f"Не удалось загрузить PDF:\n{pdf_path}\n\n{e}",
             )
+
+    def _queue_pdf_load(self, pdf_path: str) -> None:
+        """Ставит PDF в очередь фоновой загрузки."""
+        normalized_path = str(Path(pdf_path))
+        if self._pdf_load_worker is not None:
+            self._pdf_load_queue.append(normalized_path)
+            self.statusBar().showMessage(
+                self._tr(
+                    "status_pdf_queued",
+                    "PDF queued: {name}",
+                ).format(name=os.path.basename(normalized_path)),
+                2500,
+            )
+            return
+        self._start_pdf_load(normalized_path)
+
+    def _start_pdf_load(self, pdf_path: str) -> None:
+        """Запускает фоновый рендер одного PDF."""
+        self._pdf_loading_path = pdf_path
+        self._set_detection_actions_enabled(False)
+        self.progress_bar.setVisible(True)
+        self.progress_bar.setRange(0, 0)
+        self.progress_bar.setValue(0)
+
+        if self._pdf_load_progress_dialog is not None:
+            try:
+                self._pdf_load_progress_dialog.close()
+            except RuntimeError:
+                pass
+            self._pdf_load_progress_dialog = None
+
+        label_text = self._tr(
+            "pdf_loading_progress_pending",
+            "Loading PDF {name}...",
+        ).format(name=os.path.basename(pdf_path))
+        self._pdf_load_progress_dialog = QProgressDialog(
+            label_text,
+            self._tr("pdf_loading_cancel", "Cancel"),
+            0,
+            0,
+            self,
+        )
+        self._pdf_load_progress_dialog.setWindowTitle(
+            self._tr("pdf_loading_title", "PDF loading")
+        )
+        self._pdf_load_progress_dialog.setWindowModality(Qt.WindowModal)
+        self._pdf_load_progress_dialog.setMinimumDuration(0)
+        self._pdf_load_progress_dialog.canceled.connect(self._cancel_pdf_load)
+        self._pdf_load_progress_dialog.show()
+
+        worker = PdfLoadWorker(
+            pdf_path,
+            render_scale=self.pdf_render_scale,
+            session_id=self._pdf_session_id,
+        )
+        worker.progress_updated.connect(self._on_pdf_load_progress)
+        worker.result_ready.connect(self._on_pdf_load_result)
+        worker.load_error.connect(self._on_pdf_load_error)
+        worker.load_cancelled.connect(self._on_pdf_load_cancelled)
+        worker.finished.connect(worker.deleteLater)
+        self._pdf_load_worker = worker
+        self.statusBar().showMessage(label_text, 2000)
+        worker.start()
+
+    def _cancel_pdf_load(self) -> None:
+        """Отменяет текущую фоновую загрузку PDF."""
+        if self._pdf_load_worker is None:
+            return
+        self._pdf_load_worker.cancel()
+        self.statusBar().showMessage(
+            self._tr(
+                "status_pdf_loading_cancelling",
+                "Cancelling PDF loading...",
+            ),
+            2000,
+        )
+
+    def _on_pdf_load_progress(self, current: int, total: int) -> None:
+        """Обновляет прогресс фоновой загрузки PDF."""
+        sender = self.sender()
+        if sender is self._pdf_load_worker and (
+            getattr(sender, "session_id", self._pdf_session_id)
+            != self._pdf_session_id
+        ):
+            self._finish_pdf_load()
+            return
+
+        safe_total = max(int(total), 0)
+        safe_current = max(0, min(int(current), safe_total)) if safe_total else 0
+        if safe_total > 0:
+            self.progress_bar.setRange(0, safe_total)
+            self.progress_bar.setValue(safe_current)
+        else:
+            self.progress_bar.setRange(0, 0)
+
+        label_text = self._tr(
+            "pdf_loading_progress",
+            "Loading PDF {name}: {current}/{total}",
+        ).format(
+            name=os.path.basename(self._pdf_loading_path or ""),
+            current=safe_current,
+            total=safe_total,
+        )
+        dialog = self._pdf_load_progress_dialog
+        if dialog is not None:
+            try:
+                if safe_total > 0 and dialog.maximum() != safe_total:
+                    dialog.setMaximum(safe_total)
+                dialog.setValue(safe_current if safe_total > 0 else 0)
+                dialog.setLabelText(label_text)
+            except RuntimeError:
+                if self._pdf_load_progress_dialog is dialog:
+                    self._pdf_load_progress_dialog = None
+
+        if safe_total > 0:
+            self.statusBar().showMessage(label_text, 800)
+
+    def _append_pdf_pages(
+        self,
+        pdf_path: str,
+        pages: Sequence[np.ndarray],
+    ) -> None:
+        """Добавляет уже отрендеренные страницы PDF в текущий проект."""
+        base_idx = len(self.image_storage.images)
+        if self.image_storage.class_object_image is None:
+            self.image_storage.class_object_image = []
+
+        for page_num, image in enumerate(pages, start=1):
+            self.image_storage.images.append(image)
+            self.image_storage.source_files.append(pdf_path)
+            self.image_storage.class_object_image.append([])
+            name = f"{os.path.basename(pdf_path)} — стр. {page_num}"
+            self.tree_widget.add_root_item(
+                name,
+                "Страница PDF",
+                base_idx + page_num - 1,
+                "pdf",
+                image,
+            )
+
+    def _refresh_after_pdf_load(self, *, select_first: bool) -> None:
+        """Обновляет панели после завершения фоновой загрузки PDF."""
+        self._ensure_detection_storage()
+        self._refresh_tree_filter_classes()
+        self._apply_tree_filters()
+        self._refresh_statistics_panel()
+        self._refresh_thumbnails_panel()
+        self._refresh_project_files_list()
+        self._refresh_detection_result_card()
+
+        if select_first and self.image_storage.images:
+            self._active_image_index = 0
+            self.app_state.active_image_index = 0
+            self.display_image_with_boxes(0)
+            self.update_left_info({"type": "pdf", "index": 0})
+            self.thumbnails_panel.set_active_index(0)
+            self._set_active_file_row(0)
+            self._refresh_detection_result_card()
+            return
+
+        if self.image_storage.images:
+            safe_index = max(
+                0,
+                min(self._active_image_index, len(self.image_storage.images) - 1),
+            )
+            self._active_image_index = safe_index
+            self.app_state.active_image_index = safe_index
+            self.thumbnails_panel.set_active_index(safe_index)
+            self._set_active_file_row(safe_index)
+
+    def _on_pdf_load_result(
+        self,
+        pdf_path: str,
+        rendered_pages: Sequence[np.ndarray],
+    ) -> None:
+        """Применяет результат фоновой загрузки PDF."""
+        sender = self.sender()
+        if sender is self._pdf_load_worker and (
+            getattr(sender, "session_id", self._pdf_session_id)
+            != self._pdf_session_id
+        ):
+            self._finish_pdf_load()
+            return
+
+        had_images = bool(self.image_storage.images)
+        self._append_pdf_pages(pdf_path, rendered_pages)
+        self._refresh_after_pdf_load(select_first=not had_images)
+        self.statusBar().showMessage(
+            self._tr(
+                "status_pdf_loading_finished",
+                "PDF loaded: {name} ({count} pages)",
+            ).format(
+                name=os.path.basename(pdf_path),
+                count=len(rendered_pages),
+            ),
+            3000,
+        )
+        self._finish_pdf_load()
+
+    def _on_pdf_load_error(self, pdf_path: str, error_text: str) -> None:
+        """Показывает ошибку фоновой загрузки PDF."""
+        sender = self.sender()
+        if sender is self._pdf_load_worker and (
+            getattr(sender, "session_id", self._pdf_session_id)
+            != self._pdf_session_id
+        ):
+            self._finish_pdf_load()
+            return
+
+        logger.error("Ошибка при загрузке PDF %s: %s", pdf_path, error_text)
+        self._finish_pdf_load()
+        self._show_error_message(
+            self._tr("pdf_loading_title", "PDF loading"),
+            self._tr(
+                "status_pdf_loading_error",
+                "Failed to load PDF {name}: {error}",
+            ).format(
+                name=os.path.basename(pdf_path),
+                error=error_text,
+            ),
+        )
+
+    def _on_pdf_load_cancelled(self, pdf_path: str, rendered_count: int) -> None:
+        """Обрабатывает отмену фоновой загрузки PDF."""
+        sender = self.sender()
+        if sender is self._pdf_load_worker and (
+            getattr(sender, "session_id", self._pdf_session_id)
+            != self._pdf_session_id
+        ):
+            self._finish_pdf_load()
+            return
+
+        logger.info(
+            "Загрузка PDF отменена: %s (%s страниц)",
+            pdf_path,
+            rendered_count,
+        )
+        self._finish_pdf_load()
+        self.statusBar().showMessage(
+            self._tr(
+                "status_pdf_loading_cancelled",
+                "PDF loading cancelled: {name}",
+            ).format(name=os.path.basename(pdf_path)),
+            3000,
+        )
+
+    def _finish_pdf_load(self) -> None:
+        """Сбрасывает состояние загрузки PDF и запускает следующую задачу из очереди."""
+        self.progress_bar.setVisible(False)
+        self.progress_bar.setRange(0, 1)
+        self.progress_bar.setValue(0)
+        self._set_detection_actions_enabled(self.model is not None)
+
+        dialog = self._pdf_load_progress_dialog
+        self._pdf_load_progress_dialog = None
+        if dialog is not None:
+            try:
+                dialog.close()
+            except RuntimeError:
+                pass
+
+        self._pdf_load_worker = None
+        self._pdf_loading_path = ""
+
+        if self._pdf_load_queue:
+            next_pdf = self._pdf_load_queue.pop(0)
+            self._start_pdf_load(next_pdf)
 
     def _finalize_after_load(self):
         """Общие действия после открытия/добавления файлов."""
@@ -4663,13 +5235,18 @@ class ImageEditor(QMainWindow):
         )
         self._active_image_index = img_idx
         self.app_state.active_image_index = img_idx
+        self._result_bbox_items = {}
+        if self._active_result_page_index != img_idx:
+            self._active_result_page_index = None
+            self._active_result_index = None
+        self._restore_calibration_for_index(img_idx)
 
         if self._show_boxes:
             item_idx = 0
             if seeding_idx is None:
                 page_height = int(base_img.shape[0]) if isinstance(base_img, np.ndarray) else 0
                 page_width = int(base_img.shape[1]) if isinstance(base_img, np.ndarray) else 0
-                for seed_obj in objects_to_draw:
+                for seed_idx, seed_obj in enumerate(objects_to_draw):
                     if seed_obj.bbox and self._is_box_class_visible("seeding"):
                         x1, y1, x2, y2 = seed_obj.bbox
                         rect = QRectF(x1, y1, x2 - x1, y2 - y1)
@@ -4680,6 +5257,7 @@ class ImageEditor(QMainWindow):
                         )
                         self.graphics_scene.addItem(item)
                         self.rect_items[item_idx] = item
+                        self._result_bbox_items[seed_idx] = item
                         item_idx += 1
 
                     for part_obj in seed_obj.image_all_class or []:
@@ -4730,6 +5308,7 @@ class ImageEditor(QMainWindow):
                     self.graphics_scene.addItem(item)
                     self.rect_items[item_idx] = item
                     item_idx += 1
+        self._apply_active_result_highlight()
         self._set_active_file_row(img_idx)
         self._refresh_detection_result_card()
 
@@ -4756,7 +5335,9 @@ class ImageEditor(QMainWindow):
 
         if self.classify_model is None:
             try:
-                self.classify_model = YOLO(self.classify_weights_path)
+                self.classify_model = load_inference_backend(
+                    self.classify_weights_path
+                )
             except Exception as e:
                 logger.exception("Не удалось загрузить модель классификации: %s", e)
                 self._show_error_message(
@@ -4823,8 +5404,9 @@ class ImageEditor(QMainWindow):
             self.app_state.report_dir = configured_dir
             return configured_dir
 
-        if self.image_storage.file_path:
-            source_dir = os.path.dirname(self.image_storage.file_path)
+        current_source = self._current_source_file()
+        if current_source:
+            source_dir = os.path.dirname(current_source)
             if source_dir and os.path.isdir(source_dir):
                 return source_dir
 

@@ -5,15 +5,20 @@ from __future__ import annotations
 import csv
 import hashlib
 import json
+import logging
+import os
+import shutil
 from dataclasses import asdict
 from pathlib import Path
 from typing import Iterable
 
 import numpy as np
 
-from seeding.config import LOCAL_STORAGE_DIR
+from seeding.config import LEGACY_LOCAL_STORAGE_DIR, LOCAL_STORAGE_DIR
 from seeding.models import AllClassImage, MeasurementRecord, ObjectImage
 from seeding.utils import ensure_dir
+
+logger = logging.getLogger(__name__)
 
 
 class StorageService:
@@ -26,16 +31,87 @@ class StorageService:
             root_dir: пользовательский путь для хранения кэша и истории.
                 Если не задан, используется директория из конфигурации.
         """
-        base_dir = (
-            Path(root_dir) if root_dir is not None else LOCAL_STORAGE_DIR
-        )
-        self.root_dir = ensure_dir(base_dir)
+        base_dir = Path(root_dir) if root_dir is not None else LOCAL_STORAGE_DIR
+        legacy_dir = None if root_dir is not None else LEGACY_LOCAL_STORAGE_DIR
+        self.migrated_from_legacy = False
+        self.migrated_files_count = 0
+        self.root_dir = self._prepare_root_dir(base_dir, legacy_dir)
         self.cache_dir = ensure_dir(self.root_dir / "cache")
         self.detection_cache_dir = ensure_dir(self.cache_dir / "detection")
         self.classification_cache_dir = ensure_dir(
             self.cache_dir / "classification"
         )
+        self.calibrations_path = self.root_dir / "calibrations.json"
         self.history_path = self.root_dir / "measurements.jsonl"
+
+    @staticmethod
+    def _directory_has_files(directory: Path) -> bool:
+        """Возвращает ``True``, если в директории уже есть хотя бы один файл."""
+        return directory.is_dir() and any(
+            path.is_file() for path in directory.rglob("*")
+        )
+
+    def _prepare_root_dir(
+        self,
+        target_dir: Path,
+        legacy_dir: Path | None,
+    ) -> Path:
+        """Подготавливает корневой каталог и при необходимости переносит старые данные."""
+        root_dir = ensure_dir(target_dir)
+        if legacy_dir is None:
+            return root_dir
+
+        migrated_files = self._migrate_legacy_storage(legacy_dir, root_dir)
+        self.migrated_from_legacy = migrated_files > 0
+        self.migrated_files_count = migrated_files
+        return root_dir
+
+    def _migrate_legacy_storage(
+        self,
+        legacy_dir: Path,
+        target_dir: Path,
+    ) -> int:
+        """Копирует legacy-хранилище в новый user-data каталог, если он ещё пуст."""
+        source_dir = legacy_dir.expanduser()
+        if not source_dir.is_dir():
+            return 0
+
+        try:
+            if source_dir.resolve() == target_dir.resolve():
+                return 0
+        except OSError:
+            return 0
+
+        if self._directory_has_files(target_dir):
+            return 0
+
+        migrated_files = 0
+        try:
+            for source_path in source_dir.rglob("*"):
+                relative_path = source_path.relative_to(source_dir)
+                target_path = target_dir / relative_path
+                if source_path.is_dir():
+                    target_path.mkdir(parents=True, exist_ok=True)
+                    continue
+                target_path.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(source_path, target_path)
+                migrated_files += 1
+        except OSError:
+            logger.exception(
+                "Failed to migrate legacy storage from %s to %s",
+                source_dir,
+                target_dir,
+            )
+            return 0
+
+        if migrated_files:
+            logger.info(
+                "Migrated %s storage files from %s to %s",
+                migrated_files,
+                source_dir,
+                target_dir,
+            )
+        return migrated_files
 
     @staticmethod
     def build_detection_cache_key(
@@ -100,6 +176,117 @@ class StorageService:
     def _classification_cache_path(self, cache_key: str) -> Path:
         """Возвращает путь к JSON-файлу кэша классификации по ключу."""
         return self.classification_cache_dir / f"{cache_key}.json"
+
+    @staticmethod
+    def _normalize_source_file(source_file: str | Path | None) -> str | None:
+        """РџСЂРёРІРѕРґРёС‚ РїСѓС‚СЊ Рє РЅРѕСЂРјР°Р»РёР·РѕРІР°РЅРЅРѕРјСѓ РІРёРґСѓ РґР»СЏ РєР»СЋС‡РµР№ С…СЂР°РЅРµРЅРёСЏ."""
+        if source_file is None:
+            return None
+
+        raw_path = str(source_file).strip()
+        if not raw_path:
+            return None
+
+        path = Path(raw_path).expanduser()
+        try:
+            resolved = path.resolve(strict=False)
+        except OSError:
+            resolved = path.absolute()
+        return os.path.normcase(str(resolved))
+
+    def _load_calibrations_payload(self) -> dict[str, float]:
+        """Р—Р°РіСЂСѓР¶Р°РµС‚ СЃР»РѕРІР°СЂСЊ РєР°Р»РёР±СЂРѕРІРѕРє РёР· JSON-С„Р°Р№Р»Р°."""
+        if not self.calibrations_path.is_file():
+            return {}
+
+        try:
+            payload = json.loads(
+                self.calibrations_path.read_text(encoding="utf-8")
+            )
+        except (OSError, json.JSONDecodeError):
+            logger.exception(
+                "Failed to load calibrations from %s",
+                self.calibrations_path,
+            )
+            return {}
+
+        if not isinstance(payload, dict):
+            return {}
+
+        calibrations: dict[str, float] = {}
+        for raw_key, raw_value in payload.items():
+            if not isinstance(raw_key, str):
+                continue
+            try:
+                value = float(raw_value)
+            except (TypeError, ValueError):
+                continue
+            if value > 0:
+                calibrations[raw_key] = value
+        return calibrations
+
+    def _write_calibrations_payload(
+        self,
+        calibrations: dict[str, float],
+    ) -> Path | None:
+        """РЎРѕС…СЂР°РЅСЏРµС‚ СЃР»РѕРІР°СЂСЊ РєР°Р»РёР±СЂРѕРІРѕРє РІ JSON."""
+        if not calibrations:
+            try:
+                self.calibrations_path.unlink(missing_ok=True)
+            except OSError:
+                logger.exception(
+                    "Failed to remove empty calibrations file %s",
+                    self.calibrations_path,
+                )
+            return None
+
+        self.calibrations_path.parent.mkdir(parents=True, exist_ok=True)
+        self.calibrations_path.write_text(
+            json.dumps(calibrations, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        return self.calibrations_path
+
+    def save_calibration(
+        self,
+        source_file: str | Path,
+        pixels_per_mm: float,
+    ) -> Path | None:
+        """РЎРѕС…СЂР°РЅСЏРµС‚ РєРѕСЌС„С„РёС†РёРµРЅС‚ РєР°Р»РёР±СЂРѕРІРєРё РґР»СЏ РєРѕРЅРєСЂРµС‚РЅРѕРіРѕ С„Р°Р№Р»Р°."""
+        normalized_source = self._normalize_source_file(source_file)
+        value = float(pixels_per_mm)
+        if normalized_source is None or value <= 0:
+            return None
+
+        calibrations = self._load_calibrations_payload()
+        calibrations[normalized_source] = value
+        return self._write_calibrations_payload(calibrations)
+
+    def load_calibration(self, source_file: str | Path) -> float | None:
+        """Р’РѕР·РІСЂР°С‰Р°РµС‚ СЃРѕС…СЂР°РЅС‘РЅРЅСѓСЋ РєР°Р»РёР±СЂРѕРІРєСѓ РґР»СЏ С„Р°Р№Р»Р°."""
+        normalized_source = self._normalize_source_file(source_file)
+        if normalized_source is None:
+            return None
+
+        calibrations = self._load_calibrations_payload()
+        value = calibrations.get(normalized_source)
+        if value is None or value <= 0:
+            return None
+        return float(value)
+
+    def clear_calibration(self, source_file: str | Path) -> bool:
+        """РЈРґР°Р»СЏРµС‚ РєР°Р»РёР±СЂРѕРІРєСѓ РґР»СЏ С„Р°Р№Р»Р° Рё РІРѕР·РІСЂР°С‰Р°РµС‚ С„Р»Р°Рі РёР·РјРµРЅРµРЅРёСЏ."""
+        normalized_source = self._normalize_source_file(source_file)
+        if normalized_source is None:
+            return False
+
+        calibrations = self._load_calibrations_payload()
+        if normalized_source not in calibrations:
+            return False
+
+        calibrations.pop(normalized_source, None)
+        self._write_calibrations_payload(calibrations)
+        return True
 
     def save_detection_objects(
         self,

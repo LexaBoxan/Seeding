@@ -499,6 +499,21 @@ class ExportService:
         return path
 
     @staticmethod
+    def export_metadata(
+        metadata: dict[str, object],
+        output_dir: str | Path,
+    ) -> Path:
+        """Сохраняет sidecar-файл с метаданными экспорта."""
+        out_dir = Path(output_dir)
+        out_dir.mkdir(parents=True, exist_ok=True)
+        path = out_dir / "export_metadata.json"
+        path.write_text(
+            json.dumps(metadata, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        return path
+
+    @staticmethod
     def export_csv(
         image_storage: OriginalImage,
         output_dir: str | Path,

@@ -9,6 +9,7 @@ from seeding.config import (
     DEFAULT_WEIGHTS_PATH,
     DETECTION_CONFIDENCE_THRESHOLD,
     DETECTION_IOU_THRESHOLD,
+    PDF_RENDER_SCALE_DEFAULT,
     QSETTINGS_APP,
     QSETTINGS_ORG,
     USE_CACHE_DEFAULT,
@@ -50,6 +51,7 @@ def test_settings_dialog_saves_detection_and_model_settings(tmp_path):
     dialog.spin_detect_conf.setValue(0.37)
     dialog.spin_detect_iou.setValue(0.44)
     dialog.spin_pixels_per_mm.setValue(7.5)
+    dialog.spin_pdf_render_scale.setValue(2.5)
     dialog.check_use_cache.setChecked(False)
     dialog.detect_weights_edit.setText(str(detect_weights))
     dialog.classify_weights_edit.setText(str(classify_weights))
@@ -63,6 +65,7 @@ def test_settings_dialog_saves_detection_and_model_settings(tmp_path):
     assert float(settings.value("detect_conf")) == 0.37
     assert float(settings.value("detect_iou")) == 0.44
     assert float(settings.value("pixels_per_mm")) == 7.5
+    assert float(settings.value("pdf_render_scale")) == 2.5
     assert settings.value("use_cache", type=bool) is False
     assert settings.value("detect_weights_path", type=str) == str(
         detect_weights.resolve()
@@ -87,6 +90,7 @@ def test_settings_dialog_reset_defaults_restores_default_values(tmp_path):
     dialog.spin_detect_conf.setValue(0.4)
     dialog.spin_detect_iou.setValue(0.3)
     dialog.spin_pixels_per_mm.setValue(10.0)
+    dialog.spin_pdf_render_scale.setValue(6.0)
     dialog.check_use_cache.setChecked(False)
     dialog.detect_weights_edit.setText("custom_detect.pt")
     dialog.classify_weights_edit.setText("custom_classify.pt")
@@ -106,6 +110,7 @@ def test_settings_dialog_reset_defaults_restores_default_values(tmp_path):
         dialog.spin_pixels_per_mm.value()
         == CALIBRATION_PIXELS_PER_MM_DEFAULT
     )
+    assert dialog.spin_pdf_render_scale.value() == PDF_RENDER_SCALE_DEFAULT
     assert dialog.check_use_cache.isChecked() is USE_CACHE_DEFAULT
     assert dialog.detect_weights_edit.text() == str(DEFAULT_WEIGHTS_PATH)
     assert dialog.classify_weights_edit.text() == str(
@@ -114,6 +119,35 @@ def test_settings_dialog_reset_defaults_restores_default_values(tmp_path):
     assert dialog.theme_combo.currentData() == DEFAULT_UI_THEME
     assert dialog.language_combo.currentData() == DEFAULT_UI_LANGUAGE
     assert dialog.report_dir_edit.text() == ""
+
+    dialog.close()
+    if created:
+        app.quit()
+
+
+def test_settings_dialog_accepts_onnx_model_paths(tmp_path):
+    app, created = _ensure_offscreen_qt()
+    _isolate_qsettings(tmp_path)
+
+    detect_weights = tmp_path / "models" / "detect.onnx"
+    classify_weights = tmp_path / "models" / "classify.onnx"
+    detect_weights.parent.mkdir(parents=True, exist_ok=True)
+    detect_weights.write_bytes(b"detect-onnx")
+    classify_weights.write_bytes(b"classify-onnx")
+
+    dialog = SettingsDialog()
+    dialog.detect_weights_edit.setText(str(detect_weights))
+    dialog.classify_weights_edit.setText(str(classify_weights))
+
+    assert dialog.save_settings() is True
+
+    settings = QSettings(QSETTINGS_ORG, QSETTINGS_APP)
+    assert settings.value("detect_weights_path", type=str) == str(
+        detect_weights.resolve()
+    )
+    assert settings.value("classify_weights_path", type=str) == str(
+        classify_weights.resolve()
+    )
 
     dialog.close()
     if created:
@@ -131,6 +165,26 @@ def test_settings_dialog_can_request_interactive_calibration(tmp_path):
 
     assert dialog.calibration_requested is True
     assert dialog.result() == dialog.Accepted
+
+    dialog.close()
+    if created:
+        app.quit()
+
+
+def test_settings_dialog_can_apply_recommended_model_paths(tmp_path):
+    app, created = _ensure_offscreen_qt()
+    _isolate_qsettings(tmp_path)
+
+    dialog = SettingsDialog()
+    dialog._apply_recommended_detection_model()
+    dialog._apply_recommended_classification_model()
+
+    assert dialog.detect_weights_edit.text().endswith("models/bestCrop.pt")
+    assert dialog.classify_weights_edit.text().endswith(
+        "models/bestKlassSeg.pt"
+    )
+    assert "Рекомендуемая модель" in dialog.detect_model_status_label.text()
+    assert "Рекомендуемая модель" in dialog.classify_model_status_label.text()
 
     dialog.close()
     if created:

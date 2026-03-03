@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "models": [
+    {
+      "key": "seeding-detect-default",
+      "role": "detect",
+      "label": "Seeding detector",
+      "path": "models/bestCrop.pt",
+      "recommended": true,
+      "aliases": ["bestCrop", "detect-default"]
+    },
+    {
+      "key": "seeding-classify-default",
+      "role": "classify",
+      "label": "Plant parts segmenter",
+      "path": "models/bestKlassSeg.pt",
+      "recommended": true,
+      "aliases": ["bestKlassSeg", "classify-default"]
+    },
+    {
+      "key": "yolov8n-detect",
+      "role": "detect",
+      "label": "YOLOv8 Nano",
+      "path": "models/yolov8n.pt",
+      "aliases": ["yolov8n"]
+    },
+    {
+      "key": "yolov8s-detect",
+      "role": "detect",
+      "label": "YOLOv8 Small",
+      "path": "models/yolov8s.pt",
+      "aliases": ["yolov8s"]
+    },
+    {
+      "key": "yolov8m-detect",
+      "role": "detect",
+      "label": "YOLOv8 Medium",
+      "path": "models/yolov8m.pt",
+      "aliases": ["yolov8m"]
+    },
+    {
+      "key": "yolov8l-detect",
+      "role": "detect",
+      "label": "YOLOv8 Large",
+      "path": "models/yolov8l.pt",
+      "aliases": ["yolov8l"]
+    },
+    {
+      "key": "yolov8n-seg",
+      "role": "classify",
+      "label": "YOLOv8 Nano Seg",
+      "path": "models/yolov8n-seg.pt",
+      "aliases": ["yolov8n-seg"]
+    },
+    {
+      "key": "yolov8m-seg",
+      "role": "classify",
+      "label": "YOLOv8 Medium Seg",
+      "path": "models/yolov8m-seg.pt",
+      "aliases": ["yolov8m-seg"]
+    },
+    {
+      "key": "yolo11n-seg",
+      "role": "classify",
+      "label": "YOLO11 Nano Seg",
+      "path": "models/yolo11n-seg.pt",
+      "aliases": ["yolo11n-seg"]
+    }
+  ]
+}
